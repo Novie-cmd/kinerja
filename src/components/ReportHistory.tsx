@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Search, Calendar, Clock, Image as ImageIcon, ExternalLink, Trash2, Check, AlertCircle, Copy, Database, Download, Eye, FileText } from 'lucide-react';
+import { Search, Calendar, Clock, Image as ImageIcon, ExternalLink, Trash2, Check, AlertCircle, Copy, Database, Download, Eye, FileText, CheckCircle, X } from 'lucide-react';
 import { KinerjaReport } from '../types';
 
 interface ReportHistoryProps {
@@ -13,6 +13,7 @@ export default function ReportHistory({ reports, onDeleteReport, onClearAll }: R
   const [statusFilter, setStatusFilter] = useState<'All' | 'Sent' | 'Draft'>('All');
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [selectedPhoto, setSelectedPhoto] = useState<string | null>(null);
+  const [downloadSuccess, setDownloadSuccess] = useState<string | null>(null);
 
   // Filter reports
   const filteredReports = reports.filter(item => {
@@ -51,11 +52,18 @@ export default function ReportHistory({ reports, onDeleteReport, onClearAll }: R
       
     const encodedUri = encodeURI(csvContent);
     const link = document.createElement("a");
+    const fileName = `Laporan_E_Kinerja_${todayStr}.csv`;
     link.setAttribute("href", encodedUri);
-    link.setAttribute("download", `Laporan_E_Kinerja_${todayStr}.csv`);
+    link.setAttribute("download", fileName);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
+
+    // Set success notification
+    setDownloadSuccess(fileName);
+    setTimeout(() => {
+      setDownloadSuccess(null);
+    }, 4500);
   };
 
   return (
@@ -305,6 +313,28 @@ export default function ReportHistory({ reports, onDeleteReport, onClearAll }: R
               </div>
             )}
           </div>
+        </div>
+      )}
+
+      {/* Toast Notification for Export CSV success */}
+      {downloadSuccess && (
+        <div className="fixed inset-x-4 top-4 z-[999] bg-white border border-emerald-100 rounded-2xl shadow-xl p-4 flex gap-3 animate-slide-down" id="csv-success-banner">
+          <div className="w-10 h-10 rounded-full bg-emerald-50 flex-shrink-0 flex items-center justify-center text-emerald-600">
+            <CheckCircle size={22} className="animate-bounce" />
+          </div>
+          <div className="flex-1">
+            <h4 className="text-sm font-bold text-slate-800 text-left">Ekspor CSV Berhasil!</h4>
+            <p className="text-xs text-slate-500 mt-0.5 leading-relaxed text-left">
+              Log riwayat laporan <span className="font-mono text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-100 font-semibold">{downloadSuccess}</span> telah berhasil diunduh dan disimpan ke perangkat Anda.
+            </p>
+          </div>
+          <button 
+            type="button"
+            onClick={() => setDownloadSuccess(null)}
+            className="text-slate-400 hover:text-slate-600 text-xs self-start cursor-pointer border-0 bg-transparent p-1"
+          >
+            <X size={15} />
+          </button>
         </div>
       )}
     </div>

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Copy, Check, FileCode, HelpCircle, HardDrive, Database, Sliders, ExternalLink, Folder, Eye, Download, Info } from 'lucide-react';
+import { Copy, Check, FileCode, HelpCircle, HardDrive, Database, Sliders, ExternalLink, Folder, Eye, Download, Info, Wifi, CheckCircle, X } from 'lucide-react';
 import { AppSettings } from '../types';
 import { BACKUP_FILES } from '../utils/projectBackup';
 
@@ -20,11 +20,16 @@ export default function AppsScriptHub({ settings, onSaveSettings }: AppsScriptHu
   const [position, setPosition] = useState(settings.position);
   const [saveSuccess, setSaveSuccess] = useState(false);
 
+  // Live Connection Tester States
+  const [testingConnection, setTestingConnection] = useState(false);
+  const [testResult, setTestResult] = useState<{ status: 'idle' | 'success' | 'error'; message: string }>({ status: 'idle', message: '' });
+
   // Backup file states
   const [selectedBackupFile, setSelectedBackupFile] = useState<string>('src/App.tsx');
   const [fileContent, setFileContent] = useState<string>('');
   const [loadingFile, setLoadingFile] = useState<boolean>(false);
   const [copiedBackup, setCopiedBackup] = useState<boolean>(false);
+  const [downloadSuccess, setDownloadSuccess] = useState<string | null>(null);
 
   const FILES_TO_BACKUP = [
     'src/App.tsx',
@@ -86,10 +91,15 @@ export default function AppsScriptHub({ settings, onSaveSettings }: AppsScriptHu
     const file = new Blob([fileContent], { type: 'text/plain' });
     element.href = URL.createObjectURL(file);
     const parts = selectedBackupFile.split('/');
-    element.download = parts[parts.length - 1];
+    const fileName = parts[parts.length - 1];
+    element.download = fileName;
     document.body.appendChild(element);
     element.click();
     document.body.removeChild(element);
+    setDownloadSuccess(fileName);
+    setTimeout(() => {
+      setDownloadSuccess(null);
+    }, 4500);
   };
 
   const appsScriptCode = `/**
@@ -117,6 +127,14 @@ function doPost(e) {
   try {
     var rawData = e.postData.contents;
     var data = JSON.parse(rawData);
+    
+    // Uji Koneksi / Ping check
+    if (data.action === "ping") {
+      return ContentService.createTextOutput(JSON.stringify({
+        status: "success",
+        message: "Koneksi Berhasil! Google Apps Script Anda terhubung secara real-time dan siap digunakan."
+      })).setMimeType(ContentService.MimeType.JSON);
+    }
     
     // Akses Spreadsheet aktif
     var sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
@@ -193,6 +211,46 @@ function doPost(e) {
     });
     setSaveSuccess(true);
     setTimeout(() => setSaveSuccess(false), 3000);
+  };
+
+  const handleTestConnection = async () => {
+    if (!gasUrl) {
+      setTestResult({ status: 'error', message: 'Silakan masukkan Google Apps Script Web App URL terlebih dahulu!' });
+      return;
+    }
+    setTestingConnection(true);
+    setTestResult({ status: 'idle', message: '' });
+    try {
+      const response = await fetch(gasUrl.trim(), {
+        method: 'POST',
+        mode: 'cors',
+        headers: {
+          'Content-Type': 'text/plain;charset=utf-8',
+        },
+        body: JSON.stringify({ action: 'ping' })
+      });
+      if (response.ok) {
+        const resJson = await response.json();
+        if (resJson.status === 'success') {
+          setTestResult({ status: 'success', message: resJson.message || 'Koneksi Sukses!' });
+        } else {
+          setTestResult({ status: 'error', message: resJson.message || 'Apps Script merespons tetapi mengembalikan status gagal.' });
+        }
+      } else {
+        setTestResult({ 
+          status: 'error', 
+          message: `Uji koneksi gagal (HTTP ${response.status}). Pastikan Anda telah menerapkan (deployed) script sebagai Aplikasi Web dan memberikan hak akses ke "Siapa saja" (Anyone).` 
+        });
+      }
+    } catch (err: any) {
+      console.error(err);
+      setTestResult({ 
+        status: 'error', 
+        message: 'Gagal menghubungi Apps Script. Pastikan URL sudah benar dan "Who has access" diatur sebagai "Anyone", serta CORS diizinkan di browser Anda.' 
+      });
+    } finally {
+      setTestingConnection(false);
+    }
   };
 
   return (
@@ -305,13 +363,51 @@ function doPost(e) {
               type="url"
               placeholder="https://script.google.com/macros/s/.../exec"
               value={gasUrl}
-              onChange={(e) => setGasUrl(e.target.value)}
+              onChange={(e) => {
+                setGasUrl(e.target.value);
+                setTestResult({ status: 'idle', message: '' });
+              }}
               className="w-full px-4 py-3 text-xs sm:text-sm font-mono rounded-2xl bg-slate-50 border border-transparent focus:bg-white focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition-all outline-none text-slate-705 font-medium"
             />
             <p className="text-[10px] text-slate-400 mt-1 italic ml-1">
               *Kosongkan untuk mengaktifkan simulasi LocalStorage. Isi untuk langsung tersinkronisasi ke Google Sheet Anda.
             </p>
           </div>
+
+          {gasUrl && (
+            <div className="bg-slate-50 border border-slate-200/60 p-4 rounded-2xl space-y-3 animate-fade-in">
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] font-bold text-slate-600 flex items-center gap-1.5">
+                  <Wifi className="text-indigo-600" size={14} /> Keandalan Jalur Data
+                </span>
+                <button
+                  type="button"
+                  onClick={handleTestConnection}
+                  disabled={testingConnection}
+                  className="px-3 py-1.5 bg-indigo-550 hover:bg-indigo-600 active:bg-indigo-700 disabled:bg-slate-200 text-white disabled:text-slate-400 text-[10px] font-extrabold rounded-xl shadow-2xs transition-all cursor-pointer flex items-center gap-1"
+                >
+                  {testingConnection ? (
+                    <>
+                      <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                      <span>Menguji koneksi...</span>
+                    </>
+                  ) : (
+                    <span>Uji Koneksi Real-Time</span>
+                  )}
+                </button>
+              </div>
+
+              {testResult.status !== 'idle' && (
+                <div className={`p-3 rounded-xl text-xs flex gap-2 ${
+                  testResult.status === 'success' 
+                    ? 'bg-emerald-50 border border-emerald-200/60 text-emerald-700' 
+                    : 'bg-rose-50 border border-rose-200/60 text-rose-700'
+                }`}>
+                  <span className="font-semibold">{testResult.message}</span>
+                </div>
+              )}
+            </div>
+          )}
 
           <div className="pt-2">
             <button
@@ -512,6 +608,50 @@ function doPost(e) {
               <p>3. Dorong (push) kode lokal Anda ke GitHub, lalu hubungkan repositori baru tersebut ke Vercel untuk deployment otomatis bebas hambatan!</p>
             </div>
           </div>
+        </div>
+      )}
+
+      {/* Toast Notification for Download File Success */}
+      {downloadSuccess && (
+        <div className="fixed inset-x-4 top-4 z-[999] bg-white border border-emerald-100 rounded-2xl shadow-xl p-4 flex gap-3 animate-slide-down" id="download-success-banner">
+          <div className="w-10 h-10 rounded-full bg-emerald-50 flex-shrink-0 flex items-center justify-center text-emerald-600">
+            <CheckCircle size={22} className="animate-bounce" />
+          </div>
+          <div className="flex-1">
+            <h4 className="text-sm font-bold text-slate-800 text-left">Berkas Berhasil Disimpan!</h4>
+            <p className="text-xs text-slate-500 mt-0.5 leading-relaxed text-left">
+              Berkas <span className="font-mono text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-100 font-semibold">{downloadSuccess}</span> telah berhasil diunduh dan tersimpan ke perangkat Anda.
+            </p>
+          </div>
+          <button 
+            type="button"
+            onClick={() => setDownloadSuccess(null)}
+            className="text-slate-400 hover:text-slate-600 text-xs self-start cursor-pointer border-0 bg-transparent p-1"
+          >
+            <X size={15} />
+          </button>
+        </div>
+      )}
+
+      {/* Toast Notification for Save Settings Success */}
+      {saveSuccess && (
+        <div className="fixed inset-x-4 top-4 z-[999] bg-white border border-indigo-100 rounded-2xl shadow-xl p-4 flex gap-3 animate-slide-down" id="save-settings-success-banner">
+          <div className="w-10 h-10 rounded-full bg-indigo-50 flex-shrink-0 flex items-center justify-center text-indigo-600">
+            <CheckCircle size={22} className="text-indigo-600 animate-bounce" />
+          </div>
+          <div className="flex-1">
+            <h4 className="text-sm font-bold text-slate-800 text-left">Konfigurasi Disimpan!</h4>
+            <p className="text-xs text-slate-500 mt-0.5 leading-relaxed text-left">
+              Pengaturan integrasi dan informasi identitas pegawai Anda telah sukses diperbarui dan tersimpan aman.
+            </p>
+          </div>
+          <button 
+            type="button"
+            onClick={() => setSaveSuccess(false)}
+            className="text-slate-400 hover:text-slate-600 text-xs self-start cursor-pointer border-0 bg-transparent p-1"
+          >
+            <X size={15} />
+          </button>
         </div>
       )}
     </div>
