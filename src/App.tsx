@@ -1,393 +1,218 @@
-/**
- * @license
- * SPDX-License-Identifier: Apache-2.0
- */
+import React, { useState, useEffect } from 'react';
+import Header from './components/Header';
+import FormInput from './components/FormInput';
+import ReportHistory from './components/ReportHistory';
+import AppsScriptHub from './components/AppsScriptHub';
+import { KinerjaReport, AppSettings } from './types';
+import { Send, FileText, Settings } from 'lucide-react';
 
-import React, { useState, useEffect, useCallback } from 'react';
-import { motion, AnimatePresence } from 'motion/react';
-import { 
-  FileSpreadsheet, 
-  ShieldAlert, 
-  ClipboardCheck, 
-  CloudIcon, 
-  HelpCircle,
-  FileCheck2,
-  Clock,
-  ArrowRight,
-  Sparkles,
-  RefreshCw
-} from 'lucide-react';
-import { Laporan, GoogleUser } from './types';
-import { initAuth, googleSignIn, logout } from './lib/firebase';
-import { getOrCreateSpreadsheet, fetchReportsFromSheet, appendReportToSheet, uploadFileToDrive } from './lib/googleApi';
-import { Navbar } from './components/Navbar';
-import { ReportForm } from './components/ReportForm';
-import { ReportList } from './components/ReportList';
+const LOCAL_STORAGE_REPORTS_KEY = 'ekinerja_reports_data';
+const LOCAL_STORAGE_SETTINGS_KEY = 'ekinerja_settings_data';
+
+// Initial sample seed reports
+const SEED_REPORTS: KinerjaReport[] = [
+  {
+    id: 'rep_seed_1',
+    tanggal: '2026-05-27',
+    waktu: '09:15',
+    uraian: 'Mengikuti pertemuan teknis koordinasi sosialisasi aplikasi E-Kinerja Mandiri Instansi NTB dan verifikasi format data penyerapan anggaran Triwulan II.',
+    fotoName: 'foto_sosialisasi.jpg',
+    fotoUrl: 'https://images.unsplash.com/photo-1517245386807-bb43f82c33c4?auto=format&fit=crop&q=80&w=600',
+    link: 'https://drive.google.com/drive/folders/ekinerja-sosialisasi-ntb',
+    status: 'Sent',
+    timestamp: Date.now() - 24 * 60 * 60 * 1000
+  },
+  {
+    id: 'rep_seed_2',
+    tanggal: '2026-05-28',
+    waktu: '08:30',
+    uraian: 'Melakukan verifikasi berkas administrasi pengajuan dinas untuk evaluasi kinerja harian dan koordinasi fungsional pranata komputer.',
+    fotoName: 'berkas_verifikasi_kegiatan.png',
+    fotoUrl: 'https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?auto=format&fit=crop&q=80&w=600',
+    link: 'https://docs.google.com/spreadsheets/d/ekinerja-verifikasi-log',
+    status: 'Sent',
+    timestamp: Date.now() - 3 * 60 * 60 * 1000
+  }
+];
+
+const DEFAULT_SETTINGS: AppSettings = {
+  gasUrl: '',
+  employeeName: 'Ahmad Fauzi, S.Kom',
+  employeeId: '19920315 201804 1 003',
+  position: 'Pranata Komputer Ahli Pertama - Dinas Kominfotik'
+};
 
 export default function App() {
-  // Authentication states
-  const [user, setUser] = useState<GoogleUser | null>(null);
-  const [accessToken, setAccessToken] = useState<string | null>(null);
-  const [authLoading, setAuthLoading] = useState(true);
-  const [authError, setAuthError] = useState<string | null>(null);
+  // Tabs State
+  const [activeTab, setActiveTab] = useState<'formulir' | 'riwayat' | 'integrasi'>('formulir');
+  
+  // Reports Lists
+  const [reports, setReports] = useState<KinerjaReport[]>([]);
+  
+  // App Settings
+  const [settings, setSettings] = useState<AppSettings>(DEFAULT_SETTINGS);
 
-  // Workspace integration states
-  const [spreadsheetId, setSpreadsheetId] = useState<string | null>(null);
-  const [reports, setReports] = useState<Laporan[]>([]);
-  const [dataLoading, setDataLoading] = useState(false);
-  const [actionSubmitting, setActionSubmitting] = useState(false);
-  const [isSyncing, setIsSyncing] = useState(false);
-
-  // Monitor Auth Lifecycle
+  // Initialize and load persistent data
   useEffect(() => {
-    const unsubscribe = initAuth(
-      (currentUser, token) => {
-        setUser({
-          uid: currentUser.uid,
-          displayName: currentUser.displayName,
-          email: currentUser.email,
-          photoURL: currentUser.photoURL,
-        });
-        setAccessToken(token);
-        setAuthLoading(false);
-      },
-      () => {
-        setUser(null);
-        setAccessToken(null);
-        setAuthLoading(false);
+    // Load setting
+    const storedSettings = localStorage.getItem(LOCAL_STORAGE_SETTINGS_KEY);
+    if (storedSettings) {
+      try {
+        setSettings(JSON.parse(storedSettings));
+      } catch (e) {
+        console.error('Error parsing settings', e);
       }
-    );
-    return () => unsubscribe();
+    }
+
+    // Load reports
+    const storedReports = localStorage.getItem(LOCAL_STORAGE_REPORTS_KEY);
+    if (storedReports) {
+      try {
+        const parsed = JSON.parse(storedReports);
+        if (parsed && parsed.length > 0) {
+          setReports(parsed);
+          return;
+        }
+      } catch (e) {
+        console.error('Error parsing reports', e);
+      }
+    }
+    
+    // Fallback seed
+    setReports(SEED_REPORTS);
+    localStorage.setItem(LOCAL_STORAGE_REPORTS_KEY, JSON.stringify(SEED_REPORTS));
   }, []);
 
-  // Fetch reports helper
-  const syncSpreadsheetData = useCallback(async (token: string) => {
-    setIsSyncing(true);
-    try {
-      // 1. Get or create the unique Laporan spreadsheet
-      const sheetId = await getOrCreateSpreadsheet(token);
-      setSpreadsheetId(sheetId);
+  const handleAddReport = (newReport: KinerjaReport) => {
+    const updated = [newReport, ...reports];
+    setReports(updated);
+    localStorage.setItem(LOCAL_STORAGE_REPORTS_KEY, JSON.stringify(updated));
+  };
 
-      // 2. Load prior entries
-      const sheetReports = await fetchReportsFromSheet(sheetId, token);
-      setReports(sheetReports);
-    } catch (err: any) {
-      console.error('Data loading failure:', err);
-      // If we encounter a 401, clear out access token to prompt user re-login
-      if (err.message && err.message.includes('401')) {
-        setAuthError('Sesi login Google Anda telah kedaluwarsa. Silakan lakukan login ulang.');
-        handleLogout();
-      } else {
-        setAuthError(`Sinkronisasi Google Sheets gagal: ${err.message || err}`);
-      }
-    } finally {
-      setIsSyncing(false);
-      setDataLoading(false);
+  const handleDeleteReport = (id: string) => {
+    if (window.confirm('Apakah Anda yakin ingin menghapus data laporan kinerja harian ini dari log HP?')) {
+      const updated = reports.filter(item => item.id !== id);
+      setReports(updated);
+      localStorage.setItem(LOCAL_STORAGE_REPORTS_KEY, JSON.stringify(updated));
     }
-  }, []);
+  };
 
-  // React to successful login by syncing Sheets
-  useEffect(() => {
-    if (accessToken) {
-      setDataLoading(true);
-      setAuthError(null);
-      syncSpreadsheetData(accessToken);
-    } else {
-      setSpreadsheetId(null);
+  const handleClearAll = () => {
+    if (window.confirm('Apakah Anda ingin menghapus seluruh riwayat log laporan di aplikasi ini? Tindakan ini tidak menghapus data yang telah tersimpan di Google Sheets Anda.')) {
       setReports([]);
-    }
-  }, [accessToken, syncSpreadsheetData]);
-
-  // Auth Interactive Hooks
-  const handleLogin = async () => {
-    setAuthLoading(true);
-    setAuthError(null);
-    try {
-      const result = await googleSignIn();
-      if (result) {
-        setUser({
-          uid: result.user.uid,
-          displayName: result.user.displayName,
-          email: result.user.email,
-          photoURL: result.user.photoURL,
-        });
-        setAccessToken(result.accessToken);
-      }
-    } catch (err: any) {
-      console.error('Oauth login error:', err);
-      const isPopupClosed = err?.code === 'auth/popup-closed-by-user' || err?.message?.includes('popup-closed-by-user');
-      const isPopupBlocked = err?.code === 'auth/popup-blocked' || err?.message?.includes('popup-blocked');
-      
-      if (isPopupClosed) {
-        setAuthError(
-          'Jendela Pop-up sign-in ditutup/diblokir oleh browser sebelum selesai. JIKA Anda membuka aplikasi di dalam panel pratinjau AI Studio, silakan klik tombol "Buka di Tab Baru" (Open in New Tab) di pojok kanan atas pratinjau, lalu coba masuk kembali di halaman penuh agar tidak terkena batasan iframe browser.'
-        );
-      } else if (isPopupBlocked) {
-        setAuthError(
-          'Browser Anda mendeteksi dan memblokir jendela pop-up. Silakan izinkan pop-up & cookie pihak ketiga untuk situs ini pada pengaturan browser di bagian atas/kanan bar alamat Anda.'
-        );
-      } else {
-        setAuthError(err.message || 'Gagal melakukan login via Google Auth.');
-      }
-    } finally {
-      setAuthLoading(false);
+      localStorage.removeItem(LOCAL_STORAGE_REPORTS_KEY);
     }
   };
 
-  const handleLogout = async () => {
-    try {
-      await logout();
-      setUser(null);
-      setAccessToken(null);
-      setSpreadsheetId(null);
-      setReports([]);
-    } catch (err) {
-      console.error('Logout error:', err);
-    }
+  const handleSaveSettings = (newSettings: AppSettings) => {
+    setSettings(newSettings);
+    localStorage.setItem(LOCAL_STORAGE_SETTINGS_KEY, JSON.stringify(newSettings));
   };
-
-  // Form submission coordinator
-  const handleReportSubmit = async (
-    rawLaporan: Omit<Laporan, 'fileUrl' | 'fileId'>,
-    file: File | null
-  ) => {
-    if (!accessToken || !spreadsheetId) {
-      throw new Error('Aliran autentikasi Sheets/Drive terputus. Silakan coba masuk ulang.');
-    }
-
-    setActionSubmitting(true);
-    try {
-      let fileUrl = '';
-      let fileId = '';
-
-      // 1. Double upload report attachments if present
-      if (file) {
-        const driveData = await uploadFileToDrive(file, accessToken);
-        fileUrl = driveData.fileUrl;
-        fileId = driveData.fileId;
-      }
-
-      // 2. Prepare database sheet payload
-      const finalReport: Laporan = {
-        ...rawLaporan,
-        fileUrl: fileUrl || undefined,
-        fileId: fileId || undefined,
-        timestamp: new Date().toLocaleString('id-ID', { timeZoneName: 'short' }),
-      };
-
-      // 3. Save directly to Sheet database
-      await appendReportToSheet(spreadsheetId, finalReport, accessToken);
-
-      // 4. Trigger lightweight layout updates locally & pull verified rows
-      await syncSpreadsheetData(accessToken);
-    } catch (err) {
-      console.error('Failed to submit report row:', err);
-      throw err;
-    } finally {
-      setActionSubmitting(false);
-    }
-  };
-
-  if (authLoading) {
-    return (
-      <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center font-sans">
-        <div className="p-3 bg-white border border-gray-100 rounded-2xl shadow-sm animate-pulse flex items-center justify-center mb-3">
-          <FileSpreadsheet className="h-8 w-8 text-emerald-600 animate-bounce" />
-        </div>
-        <p className="text-xs font-semibold text-gray-500 font-mono tracking-wider">
-          MEMPERSIAPKAN RUANG KERJA...
-        </p>
-      </div>
-    );
-  }
 
   return (
-    <div className="min-h-screen bg-slate-50/50 text-gray-800 font-sans">
+    <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-start lg:py-10 lg:px-4 font-sans antialiased text-slate-800" id="main-view-wrapper">
       
-      <AnimatePresence mode="wait">
-        {!user ? (
-          /* Login Screen Container */
-          <motion.div
-            key="login-screen"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="min-h-screen flex items-center justify-center p-4 sm:p-6 bg-radial from-white to-slate-100"
-          >
-            <div className="max-w-md w-full bg-white rounded-3xl border border-gray-100 shadow-2xl p-6 sm:p-10 space-y-8 relative overflow-hidden">
-              <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-50 rounded-full blur-2xl -mr-16 -mt-16 pointer-events-none"></div>
-              
-              {/* BRAND HEADER */}
-              <div className="text-center space-y-4">
-                <div className="inline-flex bg-emerald-50 text-emerald-600 p-4 rounded-2xl shadow-inner shadow-emerald-100 relative">
-                  <ClipboardCheck className="h-10 w-10" />
-                  <span className="absolute -top-1.5 -right-1.5 bg-emerald-500 text-[9px] text-white px-1.5 py-0.5 rounded-full font-bold uppercase tracking-wider animate-pulse">
-                    Live
-                  </span>
-                </div>
+      {/* Premium Natural Ambient Overlay */}
+      <div className="absolute top-0 left-0 w-full h-[400px] bg-gradient-to-b from-indigo-150/40 via-indigo-50/10 to-transparent pointer-events-none z-0"></div>
+
+      {/* Centered Smartphone Container */}
+      <div className="w-full max-w-sm sm:max-w-md lg:max-w-xl flex justify-center z-10" id="phone-app-container">
+        
+        {/* Smartphone Simulator Frame Wrapper on Desktop */}
+        <div className="w-full bg-slate-950 lg:border-[10px] lg:border-slate-800 lg:rounded-[42px] lg:shadow-2xl overflow-hidden relative flex flex-col justify-between" style={{ minHeight: '100vh', maxHeight: '100vh' }} id="simulated-smartphone">
+            
+            {/* Top Ear Speaker Indicator (Invisible on actual phone screens) */}
+            <div className="hidden lg:block absolute top-2.5 left-1/2 transform -translate-x-1/2 w-28 h-4 bg-slate-800 rounded-full z-20"></div>
+
+            {/* Main Inside Frame */}
+            <div className="flex-1 flex flex-col overflow-y-auto bg-slate-50/70 scrollbar-none" id="internal-viewport">
+              {/* Official Elegant Header */}
+              <Header 
+                hasGasUrl={!!settings.gasUrl} 
+                employeeName={settings.employeeName}
+                employeeId={settings.employeeId}
+              />
+
+              {/* Main Tab Views Scrollable Container */}
+              <main className="flex-1 px-4 py-5 pb-24 overflow-y-auto" id="app-content-view">
+                {activeTab === 'formulir' && (
+                  <FormInput 
+                    settings={settings} 
+                    onAddReport={handleAddReport} 
+                  />
+                )}
                 
-                <div className="space-y-1.5">
-                  <h1 className="text-2xl font-sans font-bold text-gray-900 tracking-tight leading-none">
-                    Laporan Kinerja Harian
-                  </h1>
-                  <p className="text-xs text-gray-400 max-w-sm mx-auto leading-relaxed">
-                    Sistem pelaporan aktivitas kerja otomatis, terhubung langsung secara resmi dengan Google Drive & Google Sheets Anda.
-                  </p>
-                </div>
-              </div>
-
-              {/* INTEGRATION HIGHLIGHT BENTO MINI */}
-              <div className="grid grid-cols-3 gap-3 bg-slate-50 p-4 rounded-2xl border border-gray-100/50">
-                <div className="text-center space-y-1">
-                  <div className="bg-emerald-100/60 p-1.5 rounded-lg inline-block text-emerald-700">
-                    <FileSpreadsheet className="w-4 h-4 mx-auto" />
-                  </div>
-                  <p className="font-semibold text-[10px] text-gray-700">Sheets DB</p>
-                  <p className="text-[9px] text-gray-400">Penyimpanan Terstruktur</p>
-                </div>
-                <div className="text-center space-y-1">
-                  <div className="bg-emerald-100/60 p-1.5 rounded-lg inline-block text-emerald-700">
-                    <CloudIcon className="w-4 h-4 mx-auto" />
-                  </div>
-                  <p className="font-semibold text-[10px] text-gray-700">Drive Cloud</p>
-                  <p className="text-[9px] text-gray-400">Simpan Foto & File</p>
-                </div>
-                <div className="text-center space-y-1">
-                  <div className="bg-emerald-100/60 p-1.5 rounded-lg inline-block text-emerald-700">
-                    <Sparkles className="w-4 h-4 mx-auto" />
-                  </div>
-                  <p className="font-semibold text-[10px] text-gray-700">Instan</p>
-                  <p className="text-[9px] text-gray-400">Sinkronisasi Realtime</p>
-                </div>
-              </div>
-
-              {/* ERROR WARNING PANEL */}
-              {authError && (
-                <div className="flex items-start space-x-2 bg-rose-50 border border-rose-100 rounded-2xl p-4 text-rose-800">
-                  <ShieldAlert className="w-5 h-5 shrink-0 text-rose-600 mt-0.5" />
-                  <div className="text-xs text-rose-700 leading-tight">
-                    <p className="font-bold">Informasi Sistem</p>
-                    <p className="mt-0.5">{authError}</p>
-                  </div>
-                </div>
-              )}
-
-              {/* OFFICIALLY DESIGNED GOOGLE AUTH TRIGGER BUTTON */}
-              <div className="space-y-4">
-                <button 
-                  onClick={handleLogin}
-                  className="w-full h-12 bg-white hover:bg-slate-50 border border-gray-200 hover:border-gray-300 rounded-xl px-4 flex items-center justify-center space-x-3 shadow-md shadow-gray-100/20 active:scale-[0.99] transition-all cursor-pointer group"
-                  id="google-signin-popup-btn"
-                >
-                  <svg version="1.1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" className="w-5 h-5 shrink-0">
-                    <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"></path>
-                    <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"></path>
-                    <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"></path>
-                    <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"></path>
-                    <path fill="none" d="M0 0h48v48H0z"></path>
-                  </svg>
-                  <span className="text-sm font-semibold text-gray-700 group-hover:text-gray-900 transition-colors">
-                    Masuk dengan Akun Google
-                  </span>
-                  <ArrowRight className="w-4 h-4 text-gray-400 group-hover:text-gray-700 group-hover:translate-x-0.5 transition-all" />
-                </button>
-
-                <p className="text-[10px] text-gray-400 text-center leading-relaxed">
-                  Kami mengutamakan privasi Anda. Berkas draf, laporan, dan lampiran Anda disimpan langsung secara mandiri di Google Workspace Anda sendiri tanpa perantara server database pihak ketiga.
-                </p>
-              </div>
-
+                {activeTab === 'riwayat' && (
+                  <ReportHistory 
+                    reports={reports} 
+                    onDeleteReport={handleDeleteReport}
+                    onClearAll={handleClearAll}
+                  />
+                )}
+                
+                {activeTab === 'integrasi' && (
+                  <AppsScriptHub 
+                    settings={settings}
+                    onSaveSettings={handleSaveSettings}
+                  />
+                )}
+              </main>
             </div>
-          </motion.div>
-        ) : (
-          /* Main Interactive Workspace Area */
-          <motion.div
-            key="workspace-screen"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="flex flex-col min-h-screen"
-          >
-            {/* Header / Navbar section */}
-            <Navbar
-              user={user}
-              spreadsheetId={spreadsheetId}
-              onLogout={handleLogout}
-              onRefresh={() => syncSpreadsheetData(accessToken!)}
-              isSyncing={isSyncing}
-            />
 
-            {/* Content workspace core */}
-            <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
-              
-              {/* SYSTEM NOTIFICATION / ERROR AREA (IF INSTANCE STOPS WORKING) */}
-              {authError && (
-                <div className="mb-6 flex items-start space-x-2.5 bg-rose-50 border border-rose-100 rounded-2xl p-4 text-rose-800">
-                  <ShieldAlert className="w-5 h-5 shrink-0 text-rose-600 mt-0.5" />
-                  <div className="text-xs text-rose-700 leading-tight">
-                    <p className="font-bold">Informasi Sinkronisasi</p>
-                    <p className="mt-0.5">{authError}</p>
-                  </div>
-                  <button
-                    onClick={() => setAuthError(null)}
-                    className="ml-auto text-rose-400 hover:text-rose-600 font-sans text-xs font-semibold"
-                  >
-                    Tutup
-                  </button>
+            {/* Elegant Fixed Bottom Navigation for phone feel */}
+            <nav className="absolute bottom-0 inset-x-0 bg-white/95 backdrop-blur-md border-t border-slate-100 py-3.5 px-6 flex justify-around items-center z-50 rounded-t-[24px] lg:rounded-b-[32px] shadow-lg shadow-slate-100" id="bottom-navigation-bar">
+              <button
+                onClick={() => setActiveTab('formulir')}
+                className={`flex flex-col items-center gap-1.5 focus:outline-none transition-all cursor-pointer ${
+                  activeTab === 'formulir' 
+                    ? 'text-indigo-600 font-bold scale-105' 
+                    : 'text-slate-400 hover:text-slate-600 font-semibold'
+                }`}
+                id="btn-nav-form"
+              >
+                <Send size={18} className={activeTab === 'formulir' ? 'text-indigo-600' : 'text-slate-400'} />
+                <span className="text-[10px] tracking-wide">Formulir</span>
+              </button>
+
+              <button
+                onClick={() => setActiveTab('riwayat')}
+                className={`flex flex-col items-center gap-1.5 focus:outline-none transition-all cursor-pointer ${
+                  activeTab === 'riwayat' 
+                    ? 'text-indigo-600 font-bold scale-105' 
+                    : 'text-slate-400 hover:text-slate-600 font-semibold'
+                }`}
+                id="btn-nav-riwayat"
+              >
+                <div className="relative">
+                  <FileText size={18} className={activeTab === 'riwayat' ? 'text-indigo-600' : 'text-slate-400'} />
+                  {reports.length > 0 && (
+                    <span className="absolute -top-1 -right-1.5 w-3.5 h-3.5 bg-indigo-600 rounded-full text-[8px] text-white flex items-center justify-center font-bold font-mono">
+                      {reports.length}
+                    </span>
+                  )}
                 </div>
-              )}
+                <span className="text-[10px] tracking-wide">Riwayat</span>
+              </button>
 
-              {/* DUAL WORKSPACE LAYOUT Grid */}
-              <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-                
-                {/* LEFT COLUMN: The Report entry form (5-cols) */}
-                <div className="lg:col-span-5 lg:sticky lg:top-24">
-                  <ReportForm
-                    onSubmit={handleReportSubmit}
-                    isSubmitting={actionSubmitting}
-                  />
+              <button
+                onClick={() => setActiveTab('integrasi')}
+                className={`flex flex-col items-center gap-1.5 focus:outline-none transition-all cursor-pointer ${
+                  activeTab === 'integrasi' 
+                    ? 'text-indigo-600 font-bold scale-105' 
+                    : 'text-slate-400 hover:text-slate-600 font-semibold'
+                }`}
+                id="btn-nav-settings"
+              >
+                <Settings size={18} className={activeTab === 'integrasi' ? 'text-indigo-600' : 'text-slate-400'} />
+                <span className="text-[10px] tracking-wide">Integrasi</span>
+              </button>
+            </nav>
 
-                  {/* MINI INSTRUCTION BANNER (SO USER ALWAYS SECURES SUCCESS) */}
-                  <div className="mt-4 bg-emerald-50/40 border border-emerald-150/40 rounded-2xl p-4 flex items-start space-x-3">
-                    <HelpCircle className="w-5 h-5 text-emerald-600 mt-0.5 shrink-0" />
-                    <div className="text-xs text-emerald-800/90 leading-relaxed text-left">
-                      <p className="font-bold">Cara Kerja Otomasi:</p>
-                      <p className="mt-0.5">
-                        Setiap formulir yang dikirimkan akan ditambahkan ke Google Sheet di bagian baris terakhir secara aman. Lampiran foto/dokumen diunggah ke Google Drive Anda dan tautan unduhannya (Share link) disertakan otomatis pada kolom laporan.
-                      </p>
-                    </div>
-                  </div>
-                </div>
+          </div>
 
-                {/* RIGHT COLUMN: The Interactive reports history list (7-cols) */}
-                <div className="lg:col-span-7">
-                  <ReportList
-                    reports={reports}
-                    isLoading={dataLoading}
-                  />
-                </div>
-
-              </div>
-
-            </main>
-
-            {/* High fidelity professional footer element */}
-            <footer className="bg-white border-t border-gray-150 py-6 mt-16 text-center text-xs text-gray-400">
-              <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-3">
-                <p>
-                  © {new Date().getFullYear()} Laporan Kinerja Harian. Otomasi Google Workspace terverifikasi keamanan penuh.
-                </p>
-                <div className="flex items-center space-x-1">
-                  <span>Penyimpanan Awan:</span>
-                  <span className="font-bold text-gray-500">Google Drive & Sheets API</span>
-                </div>
-              </div>
-            </footer>
-
-          </motion.div>
-        )}
-      </AnimatePresence>
+        </div>
 
     </div>
   );
 }
+
