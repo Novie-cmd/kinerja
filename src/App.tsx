@@ -115,7 +115,20 @@ export default function App() {
       }
     } catch (err: any) {
       console.error('Oauth login error:', err);
-      setAuthError(err.message || 'Gagal login via Google Auth.');
+      const isPopupClosed = err?.code === 'auth/popup-closed-by-user' || err?.message?.includes('popup-closed-by-user');
+      const isPopupBlocked = err?.code === 'auth/popup-blocked' || err?.message?.includes('popup-blocked');
+      
+      if (isPopupClosed) {
+        setAuthError(
+          'Jendela Pop-up sign-in ditutup/diblokir oleh browser sebelum selesai. JIKA Anda membuka aplikasi di dalam panel pratinjau AI Studio, silakan klik tombol "Buka di Tab Baru" (Open in New Tab) di pojok kanan atas pratinjau, lalu coba masuk kembali di halaman penuh agar tidak terkena batasan iframe browser.'
+        );
+      } else if (isPopupBlocked) {
+        setAuthError(
+          'Browser Anda mendeteksi dan memblokir jendela pop-up. Silakan izinkan pop-up & cookie pihak ketiga untuk situs ini pada pengaturan browser di bagian atas/kanan bar alamat Anda.'
+        );
+      } else {
+        setAuthError(err.message || 'Gagal melakukan login via Google Auth.');
+      }
     } finally {
       setAuthLoading(false);
     }
