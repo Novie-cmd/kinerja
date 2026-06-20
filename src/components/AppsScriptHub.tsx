@@ -145,8 +145,33 @@ function doPost(e) {
     var linkPendukung = data.link || "";
     var fotoUrl = "";
     
-    // Jika ada kiriman foto/file berkas dalam format Base64
-    if (data.fotoBase64 && data.fotoName) {
+    // Jika ada kiriman multiple attachments (Fungsi multi-file/image)
+    if (data.attachments && data.attachments.length > 0) {
+      var urls = [];
+      for (var i = 0; i < data.attachments.length; i++) {
+        var att = data.attachments[i];
+        if (att.base64 && att.name) {
+          try {
+            var base64Data = att.base64.split(",")[1] || att.base64;
+            var decoded = Utilities.base64Decode(base64Data);
+            
+            var contentType = "image/jpeg";
+            if (att.name.toLowerCase().endsWith(".png")) contentType = "image/png";
+            else if (att.name.toLowerCase().endsWith(".pdf")) contentType = "application/pdf";
+            else if (att.name.toLowerCase().endsWith(".gif")) contentType = "image/gif";
+            
+            var blob = Utilities.newBlob(decoded, contentType, att.name);
+            var file = DriveApp.createFile(blob);
+            file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+            urls.push(file.getUrl());
+          } catch(err) {
+            urls.push("Gagal simpan " + att.name + ": " + err.toString());
+          }
+        }
+      }
+      fotoUrl = urls.join(", ");
+    } else if (data.fotoBase64 && data.fotoName) {
+      // Jika ada satu kiriman foto/file berkas dalam format Base64 (Mendukung versi lama)
       try {
         var base64Data = data.fotoBase64.split(",")[1] || data.fotoBase64;
         var decoded = Utilities.base64Decode(base64Data);

@@ -202,49 +202,114 @@ export default function ReportHistory({ reports, onDeleteReport, onClearAll }: R
               </div>
 
               {/* Photo & Additional Link block */}
-              {(report.fotoUrl || report.link) && (
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2" id="report-media">
-                  {/* Photo Preview Thumbnail */}
-                  {report.fotoUrl && (
-                    <div className="border border-slate-100 rounded-xl bg-slate-50 p-2 flex items-center gap-2">
-                      <div className="relative w-10 h-10 rounded-lg overflow-hidden border border-slate-200 bg-white flex-shrink-0 flex items-center justify-center">
-                        {report.fotoUrl.startsWith('data:') ? (
-                          <img 
-                            src={report.fotoUrl} 
-                            alt="Attached Document" 
-                            className="w-full h-full object-cover"
-                            referrerPolicy="no-referrer"
-                          />
-                        ) : (
-                          <ImageIcon size={16} className="text-indigo-700 animate-pulse" />
-                        )}
-                        <button
-                          type="button"
-                          onClick={() => setSelectedPhoto(report.fotoUrl || null)}
-                          className="absolute inset-0 bg-black/40 hover:bg-black/25 flex items-center justify-center text-white opacity-0 hover:opacity-100 transition-opacity"
-                        >
-                          <Eye size={12} />
-                        </button>
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <span className="block text-[9px] text-slate-400 uppercase font-bold">Foto Lampiran</span>
-                        <span className="text-[10px] text-slate-600 font-mono truncate block" title={report.fotoName || 'Dokumen.jpg'}>
-                          {report.fotoName || 'Dokumen.jpg'}
-                        </span>
-                      </div>
+              {(report.fotoUrl || (report.attachments && report.attachments.length > 0) || report.link) && (
+                <div className="space-y-2.5 pt-2" id="report-media">
+                  {/* Attachments Section */}
+                  {report.attachments && report.attachments.length > 0 ? (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                      {report.attachments.map((att, index) => {
+                        const fileUrl = att.url || att.base64;
+                        const isImage = att.type?.startsWith('image/') || (!att.type && !att.name.toLowerCase().endsWith('.pdf'));
+                        return (
+                          <div key={index} className="border border-slate-100 rounded-xl bg-slate-50 p-2 flex items-center gap-2">
+                            <div className="relative w-10 h-10 rounded-lg overflow-hidden border border-slate-200 bg-white flex-shrink-0 flex items-center justify-center">
+                              {isImage && fileUrl ? (
+                                <img 
+                                  src={fileUrl} 
+                                  alt={att.name} 
+                                  className="w-full h-full object-cover"
+                                  referrerPolicy="no-referrer"
+                                />
+                              ) : (
+                                <svg className="w-5 h-5 text-indigo-650" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                </svg>
+                              )}
+                              {fileUrl && (
+                                <button
+                                  type="button"
+                                  onClick={() => setSelectedPhoto(fileUrl)}
+                                  className="absolute inset-0 bg-black/40 hover:bg-black/25 flex items-center justify-center text-white opacity-0 hover:opacity-100 transition-opacity cursor-pointer border-0"
+                                >
+                                  <Eye size={12} />
+                                </button>
+                              )}
+                            </div>
+                            <div className="min-w-0 flex-1 text-left">
+                              <span className="block text-[9px] text-slate-400 font-bold uppercase">Berkas {index + 1}</span>
+                              <span className="text-[10px] text-slate-600 font-mono truncate block" title={att.name}>
+                                {att.name}
+                              </span>
+                            </div>
+                            {att.url && (
+                              <a 
+                                href={att.url} 
+                                target="_blank" 
+                                rel="noopener noreferrer" 
+                                className="text-slate-400 hover:text-indigo-650 p-1 flex-shrink-0 hover:bg-slate-100 rounded"
+                                title="Buka di tab baru"
+                              >
+                                <ExternalLink size={12} />
+                              </a>
+                            )}
+                          </div>
+                        );
+                      })}
                     </div>
+                  ) : (
+                    /* Fallback to legacy single file if array is empty */
+                    report.fotoUrl && (
+                      <div className="border border-slate-100 rounded-xl bg-slate-50 p-2 flex items-center gap-2">
+                        <div className="relative w-10 h-10 rounded-lg overflow-hidden border border-slate-200 bg-white flex-shrink-0 flex items-center justify-center">
+                          {report.fotoUrl.startsWith('data:') ? (
+                            <img 
+                              src={report.fotoUrl} 
+                              alt="Attached Document" 
+                              className="w-full h-full object-cover"
+                              referrerPolicy="no-referrer"
+                            />
+                          ) : (
+                            <ImageIcon size={16} className="text-indigo-700 animate-pulse" />
+                          )}
+                          <button
+                            type="button"
+                            onClick={() => setSelectedPhoto(report.fotoUrl || null)}
+                            className="absolute inset-0 bg-black/40 hover:bg-black/25 flex items-center justify-center text-white opacity-0 hover:opacity-100 transition-opacity cursor-pointer border-0"
+                          >
+                            <Eye size={12} />
+                          </button>
+                        </div>
+                        <div className="min-w-0 flex-1 text-left">
+                          <span className="block text-[9px] text-slate-400 uppercase font-bold">Foto Lampiran</span>
+                          <span className="text-[10px] text-slate-600 font-mono truncate block" title={report.fotoName || 'Dokumen.jpg'}>
+                            {report.fotoName || 'Dokumen.jpg'}
+                          </span>
+                        </div>
+                        {!report.fotoUrl.startsWith('data:') && (
+                          <a 
+                            href={report.fotoUrl} 
+                            target="_blank" 
+                            rel="noopener noreferrer" 
+                            className="text-slate-400 hover:text-indigo-650 p-1 flex-shrink-0 hover:bg-slate-100 rounded"
+                            title="Buka di tab baru"
+                          >
+                            <ExternalLink size={12} />
+                          </a>
+                        )}
+                      </div>
+                    )
                   )}
-
+ 
                   {/* Attachment documentation Link */}
                   {report.link && (
                     <a
                       href={report.link}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="border border-slate-200/80 rounded-xl bg-slate-50 hover:bg-slate-100/55 p-2 flex items-center justify-between transition-colors text-slate-700"
+                      className="border border-slate-200/80 rounded-xl bg-slate-50 hover:bg-slate-100/55 p-2 flex items-center justify-between transition-colors text-slate-700 block text-left"
                     >
                       <div className="min-w-0 flex-1">
-                        <span className="block text-[9px] text-slate-400 uppercase font-bold">Link Dokumentasi</span>
+                        <span className="block text-[9px] text-slate-400 uppercase font-bold">Link Dokumentasi Utama</span>
                         <span className="text-[10px] text-slate-600 truncate block font-sans pr-1">
                           {report.link}
                         </span>

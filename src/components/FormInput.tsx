@@ -19,10 +19,17 @@ export default function FormInput({ settings, onAddReport }: FormInputProps) {
   const [tanggal, setTanggal] = useState('');
   const [waktu, setWaktu] = useState('');
   const [uraian, setUraian] = useState('');
-  const [fotoFile, setFotoFile] = useState<File | null>(null);
-  const [fotoName, setFotoName] = useState('');
-  const [fotoBase64, setFotoBase64] = useState('');
-  const [fotoPreviewUrl, setFotoPreviewUrl] = useState('');
+  
+  // Multiple Attachments states
+  const [attachments, setAttachments] = useState<{
+    id: string;
+    file: File;
+    name: string;
+    base64: string;
+    previewUrl: string;
+    type: string;
+  }[]>([]);
+  
   const [link, setLink] = useState('');
   
   // Status states
@@ -43,25 +50,67 @@ export default function FormInput({ settings, onAddReport }: FormInputProps) {
     setWaktu(formattedTime);
   }, []);
 
-  // Handle file picker and convert file to Base64 in standard way
+  // Handle multiple files picker and convert to Base64
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      if (file.size > 5 * 1024 * 1024) {
-        setErrorMsg('Ukuran file terlalu besar! Maksimal ukuran file foto adalah 5 MB agar aman dikirim ke Apps Script.');
-        return;
+    const files = e.target.files;
+    if (files && files.length > 0) {
+      let oversized = false;
+      const fileList: File[] = [];
+      for (let i = 0; i < files.length; i++) {
+        const file = files.item(i);
+        if (file) fileList.push(file);
       }
-      setErrorMsg('');
-      setFotoFile(file);
-      setFotoName(file.name);
-      
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        const base64String = reader.result as string;
-        setFotoBase64(base64String);
-        setFotoPreviewUrl(base64String);
-      };
-      reader.readAsDataURL(file);
+
+      const promises = fileList.map((file: File) => {
+        if (file.size > 5 * 1024 * 1024) {
+          oversized = true;
+          return Promise.resolve(null);
+        }
+        
+        return new Promise<{
+          id: string;
+          file: File;
+          name: string;
+          base64: string;
+          previewUrl: string;
+          type: string;
+        }>((resolve) => {
+          const reader = new FileReader();
+          reader.onloadend = () => {
+            const base64String = reader.result as string;
+            resolve({
+              id: 'att_' + Math.random().toString(36).substr(2, 9),
+              file,
+              name: file.name,
+              base64: base64String,
+              previewUrl: base64String,
+              type: file.type
+            });
+          };
+          reader.readAsDataURL(file);
+        });
+      });
+
+      if (oversized) {
+        setErrorMsg('Ada file yang melebihi batas 5 MB! File tersebut tidak akan ditambahkan.');
+      }
+
+      Promise.all(promises).then((results) => {
+        const filtered = results.filter((item): item is {
+          id: string;
+          file: File;
+          name: string;
+          base64: string;
+          previewUrl: string;
+          type: string;
+        } => item !== null);
+        
+        if (filtered.length > 0) {
+          setErrorMsg('');
+          setAttachments((prev) => [...prev, ...filtered]);
+        }
+        if (fileInputRef.current) fileInputRef.current.value = '';
+      });
     }
   };
 
@@ -69,11 +118,12 @@ export default function FormInput({ settings, onAddReport }: FormInputProps) {
     fileInputRef.current?.click();
   };
 
-  const removePhoto = () => {
-    setFotoFile(null);
-    setFotoName('');
-    setFotoBase64('');
-    setFotoPreviewUrl('');
+  const removeAttachment = (id: string) => {
+    setAttachments((prev) => prev.filter((item) => item.id !== id));
+  };
+
+  const clearAllAttachments = () => {
+    setAttachments([]);
     if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
@@ -99,18 +149,28 @@ export default function FormInput({ settings, onAddReport }: FormInputProps) {
 
     const newReportId = 'rep_' + Math.random().toString(36).substr(2, 9);
     
+    const reportAttachments = attachments.map(item => ({
+      name: item.name,
+      base64: item.base64,
+      url: item.previewUrl,
+      type: item.type
+    }));
+
+    const primaryAttachment = reportAttachments[0];
+    
     // Create new report object
     const newReport: KinerjaReport = {
       id: newReportId,
       tanggal,
       waktu,
       uraian: uraian.trim(),
-      fotoName: fotoName || undefined,
-      fotoBase64: fotoBase64 || undefined,
-      fotoUrl: fotoPreviewUrl || undefined,
+      fotoName: primaryAttachment ? primaryAttachment.name : undefined,
+      fotoBase64: primaryAttachment ? primaryAttachment.base64 : undefined,
+      fotoUrl: primaryAttachment ? primaryAttachment.url : undefined,
       link: link.trim(),
       status: 'Draft',
-      timestamp: Date.now()
+      timestamp: Date.now(),
+      attachments: reportAttachments.length > 0 ? reportAttachments : undefined
     };
 
     // If User has configured Google Apps Script URL
@@ -121,8 +181,9 @@ export default function FormInput({ settings, onAddReport }: FormInputProps) {
           tanggal,
           waktu,
           uraian: uraian.trim(),
-          fotoBase64,
-          fotoName,
+          fotoBase64: primaryAttachment ? primaryAttachment.base64 : '',
+          fotoName: primaryAttachment ? primaryAttachment.name : '',
+          attachments: reportAttachments.map(att => ({ name: att.name, base64: att.base64 })),
           link: link.trim()
         };
 
@@ -141,6 +202,20 @@ export default function FormInput({ settings, onAddReport }: FormInputProps) {
             newReport.status = 'Sent';
             if (resJson.fileUrl) {
               newReport.fotoUrl = resJson.fileUrl;
+              
+              // Map saved Google Drive URLs back to our attachments
+              const urls = resJson.fileUrl.split(', ');
+              if (newReport.attachments && urls.length === newReport.attachments.length) {
+                newReport.attachments = newReport.attachments.map((item, idx) => ({
+                  ...item,
+                  url: urls[idx]
+                }));
+              } else if (newReport.attachments) {
+                newReport.attachments = newReport.attachments.map((item, idx) => ({
+                  ...item,
+                  url: urls[idx] || urls[0]
+                }));
+              }
             }
           } else {
             newReport.status = 'Draft';
@@ -162,7 +237,7 @@ export default function FormInput({ settings, onAddReport }: FormInputProps) {
     
     setUraian('');
     setLink('');
-    removePhoto();
+    clearAllAttachments();
     setSubmitting(false);
     setShowSuccess(true);
     
@@ -275,116 +350,95 @@ export default function FormInput({ settings, onAddReport }: FormInputProps) {
             </div>
           </div>
 
-          {/* Foto/File Picker */}
-          <div className="space-y-1.5">
-            <label className="text-xs font-bold text-slate-500 uppercase ml-1 block">
-              Lampiran Foto / File
-            </label>
+          {/* Foto/File Picker - Mendukung Lebih Dari 1 Lampiran */}
+          <div className="space-y-3">
+            <div className="flex items-center justify-between ml-1">
+              <label className="text-xs font-bold text-slate-500 uppercase block">
+                Lampiran Foto / File kegiatan <span className="text-indigo-600 font-extrabold font-mono">(Dapat melampirkan lebih dari 1)</span>
+              </label>
+              {attachments.length > 0 && (
+                <button
+                  type="button"
+                  onClick={clearAllAttachments}
+                  className="text-[10px] text-rose-600 hover:text-rose-700 font-extrabold cursor-pointer border border-rose-100 hover:bg-rose-50 px-2.5 py-1 rounded-xl transition-all"
+                >
+                  Hapus Semua ({attachments.length})
+                </button>
+              )}
+            </div>
             
             <input
               type="file"
               accept="image/*,.pdf"
+              multiple
               ref={fileInputRef}
               onChange={handleFileChange}
               className="hidden"
             />
 
+            {/* Clickable Drop Zone / Add Button */}
             <div 
-              onClick={!fotoPreviewUrl ? triggerFileSelect : undefined}
-              className={`relative rounded-2xl overflow-hidden transition-all flex flex-col items-center justify-center ${
-                !fotoPreviewUrl 
-                  ? 'border-2 border-dashed border-slate-200 hover:border-indigo-500 hover:bg-indigo-50/10 p-6 text-center cursor-pointer group' 
-                  : 'border border-slate-200 bg-slate-50 p-2 min-h-[160px]'
-              }`}
-              id="drop-zone-or-preview"
+              onClick={triggerFileSelect}
+              className="border-2 border-dashed border-slate-200 hover:border-indigo-500 hover:bg-indigo-50/10 p-5 rounded-2xl text-center cursor-pointer group transition-all"
+              id="multi-drop-zone"
             >
-              {!fotoPreviewUrl ? (
-                <>
-                  <div className="w-10 h-10 rounded-full bg-slate-50 group-hover:bg-indigo-50 flex items-center justify-center text-slate-400 group-hover:text-indigo-600 transition-colors">
-                    <FileUp size={18} />
-                  </div>
-                  <div>
-                    <h4 className="text-xs font-bold text-slate-700">Pilih Berkas / Foto Kegiatan</h4>
-                    <p className="text-[10px] text-slate-400 mt-0.5">Format file: JPG, PNG, PDF (Maks. 5 MB)</p>
-                  </div>
-                </>
-              ) : (
-                <div className="w-full h-full min-h-[140px] flex flex-col justify-between p-2 relative group/preview">
-                  {/* Photo or file representation */}
-                  {fotoFile?.type.startsWith('image/') ? (
-                    <div className="relative w-full h-36 rounded-xl overflow-hidden border border-slate-100 bg-white shadow-2xs">
-                      <img 
-                        src={fotoPreviewUrl} 
-                        alt="Upload Preview" 
-                        className="w-full h-full object-cover"
-                        referrerPolicy="no-referrer"
-                      />
-                      {/* Overlay action on hover */}
-                      <div className="absolute inset-0 bg-slate-900/40 opacity-0 group-hover/preview:opacity-100 transition-opacity flex items-center justify-center gap-2">
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            triggerFileSelect();
-                          }}
-                          className="px-3 py-1.5 bg-white hover:bg-indigo-50 text-indigo-750 rounded-xl text-xs font-bold shadow-sm transition-all"
-                        >
-                          Ganti
-                        </button>
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            removePhoto();
-                          }}
-                          className="px-3 py-1.5 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-xs font-bold shadow-sm transition-all"
-                        >
-                          Hapus
-                        </button>
+              <div className="w-10 h-10 rounded-full bg-slate-50 group-hover:bg-indigo-50 flex items-center justify-center text-slate-400 group-hover:text-indigo-600 transition-colors mx-auto mb-2">
+                <FileUp size={18} />
+              </div>
+              <div>
+                <h4 className="text-xs font-bold text-slate-700">Pilih Berkas / Foto Kegiatan</h4>
+                <p className="text-[10px] text-slate-400 mt-1">Anda dapat memilih satu atau banyak file sekaligus • JPG, PNG, PDF (Maks. 5 MB per file)</p>
+              </div>
+            </div>
+
+            {/* Attachments List Grid */}
+            {attachments.length > 0 && (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1 animate-fade-in" id="attachments-grid">
+                {attachments.map((att) => (
+                  <div 
+                    key={att.id}
+                    className="border border-slate-100 bg-slate-50/60 p-2.5 rounded-xl flex items-center justify-between gap-3 relative hover:border-slate-200 transition-all shadow-3xs"
+                  >
+                    <div className="flex items-center gap-2.5 min-w-0 flex-1">
+                      {/* Photo Thumbnail or File Icon */}
+                      {att.type.startsWith('image/') ? (
+                        <div className="w-10 h-10 rounded-lg overflow-hidden border border-slate-200 bg-white flex-shrink-0">
+                          <img 
+                            src={att.previewUrl} 
+                            alt={att.name} 
+                            className="w-full h-full object-cover"
+                            referrerPolicy="no-referrer"
+                          />
+                        </div>
+                      ) : (
+                        <div className="w-10 h-10 rounded-lg bg-indigo-50 border border-indigo-100 flex items-center justify-center text-indigo-650 flex-shrink-0">
+                          <svg className="w-5 h-5 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                          </svg>
+                        </div>
+                      )}
+
+                      <div className="min-w-0 flex-1 text-left">
+                        <p className="text-xs font-bold text-slate-750 truncate" title={att.name}>{att.name}</p>
+                        <p className="text-[9px] text-slate-400 font-mono mt-0.5">{(att.file.size / 1024 / 1024).toFixed(2)} MB</p>
                       </div>
                     </div>
-                  ) : (
-                    <div className="w-full h-24 rounded-xl bg-indigo-50/60 border border-indigo-100/50 flex flex-col items-center justify-center gap-1">
-                      <svg className="w-8 h-8 text-indigo-650 animate-pulse" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                      </svg>
-                      <span className="text-[10px] uppercase font-bold text-indigo-700 tracking-wider">Berkas PDF Dokumen</span>
-                    </div>
-                  )}
 
-                  {/* Info and action line beneath image */}
-                  <div className="mt-2.5 flex items-center justify-between px-1">
-                    <div className="min-w-0 pr-2">
-                      <p className="text-xs font-bold text-slate-700 truncate">{fotoName}</p>
-                      <p className="text-[9px] text-slate-400 font-mono font-medium">Size: {fotoFile ? (fotoFile.size / 1024 / 1024).toFixed(2) : '0'} MB</p>
-                    </div>
-                    {/* Action button triggers list directly in clean style if not hovered */}
-                    <div className="flex gap-1.5 flex-shrink-0">
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          triggerFileSelect();
-                        }}
-                        className="p-1 px-2.5 bg-slate-100 hover:bg-indigo-50 text-slate-600 hover:text-indigo-700 rounded-lg text-[10px] font-bold transition-all cursor-pointer"
-                      >
-                        Ganti
-                      </button>
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          removePhoto();
-                        }}
-                        className="p-1 px-2.5 bg-rose-50 hover:bg-rose-100 text-rose-600 rounded-lg text-[10px] font-bold transition-all cursor-pointer"
-                      >
-                        Hapus
-                      </button>
-                    </div>
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        removeAttachment(att.id);
+                      }}
+                      className="p-1.5 hover:bg-rose-50 text-slate-400 hover:text-rose-600 rounded-lg transition-colors cursor-pointer border-0 bg-transparent"
+                      title="Hapus file ini"
+                    >
+                      <X size={14} />
+                    </button>
                   </div>
-                </div>
-              )}
-            </div>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* Link Pendukung */}

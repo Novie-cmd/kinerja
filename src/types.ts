@@ -1,3 +1,10 @@
+export interface AttachmentFile {
+  name: string;
+  base64: string;
+  url?: string;
+  type?: string;
+}
+
 export interface KinerjaReport {
   id: string;
   tanggal: string; // YYYY-MM-DD
@@ -9,6 +16,7 @@ export interface KinerjaReport {
   link: string;
   status: 'Draft' | 'Sent' | 'Failed';
   timestamp: number;
+  attachments?: AttachmentFile[];
 }
 
 export interface AppSettings {
