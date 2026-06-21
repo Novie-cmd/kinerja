@@ -419,24 +419,6 @@ export default function FormInput({ settings, onAddReport }: FormInputProps) {
               onChange={(e) => setUraian(e.target.value)}
               className="w-full px-4 py-3 rounded-2xl bg-slate-50 border border-transparent focus:bg-white focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition-all outline-none text-sm text-slate-800 leading-relaxed resize-none"
             />
-            
-            {/* Elegant Quick Autocomplete Templates */}
-            <div className="space-y-1 pt-1" id="templates-area">
-              <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block ml-1">✨ Rekomendasi Templat Cepat (Klik):</span>
-              <div className="flex flex-wrap gap-1.5 max-h-[90px] overflow-y-auto p-1.5 bg-slate-50 rounded-xl custom-scrollbar">
-                {TEMPLATE_URAIAN.map((template, idx) => (
-                  <button
-                    key={idx}
-                    type="button"
-                    onClick={() => handleTemplateClick(template)}
-                    className="text-[10px] text-left px-2.5 py-1.5 bg-white hover:bg-indigo-50 text-slate-600 hover:text-indigo-700 hover:border-indigo-200 border border-slate-200/60 rounded-xl shadow-3xs transition-all cursor-pointer truncate max-w-[280px]"
-                    title={template}
-                  >
-                    {template}
-                  </button>
-                ))}
-              </div>
-            </div>
           </div>
 
           {/* Foto/File Picker - Mendukung Lebih Dari 1 Lampiran */}
