@@ -239,7 +239,7 @@ export default function FormInput({ settings, onAddReport }: FormInputProps) {
         newReport.status = 'Sent';
       }
     } else {
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      await new Promise(resolve => setTimeout(resolve, 100));
       newReport.status = 'Sent';
     }
 
@@ -253,7 +253,7 @@ export default function FormInput({ settings, onAddReport }: FormInputProps) {
     
     setTimeout(() => {
       setShowSuccess(false);
-    }, 4000);
+    }, 4500);
   };
 
   return (
@@ -520,9 +520,9 @@ export default function FormInput({ settings, onAddReport }: FormInputProps) {
             <CheckCircle size={22} className="animate-bounce" />
           </div>
           <div className="flex-1">
-            <h4 className="text-sm font-bold text-slate-800">Laporan Berhasil Terkirim!</h4>
+            <h4 className="text-sm font-bold text-slate-850">Data telah berhasil disimpan</h4>
             <p className="text-xs text-slate-500 mt-0.5 leading-relaxed">
-              Kinerja harian Anda telah tersimpan. {settings.gasUrl ? 'Telah langsung tersinkronisasi ke Google Sheet Anda.' : 'Tersimpan aman di log riwayat lokal ponsel.'}
+              Laporan kinerja harian Anda telah sukses diarsipkan. {settings.gasUrl ? 'Seluruh berkas terunggah & tersinkronisasi ke Google Sheet secara real-time.' : 'Tersimpan aman di log riwayat lokal ponsel.'}
             </p>
           </div>
           <button 
