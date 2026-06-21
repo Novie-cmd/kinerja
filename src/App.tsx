@@ -110,22 +110,27 @@ export default function App() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-start lg:py-10 lg:px-4 font-sans antialiased text-slate-800" id="main-view-wrapper">
+    <div className="min-h-screen bg-slate-50 lg:bg-gradient-to-tr lg:from-[#111827] lg:via-[#1e293b] lg:to-[#0f172a] flex flex-col items-center justify-start lg:py-10 lg:px-4 font-sans antialiased text-slate-800" id="main-view-wrapper">
       
-      {/* Premium Natural Ambient Overlay */}
-      <div className="absolute top-0 left-0 w-full h-[400px] bg-gradient-to-b from-indigo-150/40 via-indigo-50/10 to-transparent pointer-events-none z-0"></div>
+      {/* Premium Natural Ambient Overlay (Visible on large screens) */}
+      <div className="hidden lg:block absolute top-0 left-0 w-full h-[450px] bg-gradient-to-b from-indigo-500/10 via-transparent to-transparent pointer-events-none z-0"></div>
 
       {/* Centered Smartphone Container */}
       <div className="w-full max-w-sm sm:max-w-md lg:max-w-xl flex justify-center z-10" id="phone-app-container">
         
         {/* Smartphone Simulator Frame Wrapper on Desktop */}
-        <div className="w-full bg-slate-950 lg:border-[10px] lg:border-slate-800 lg:rounded-[42px] lg:shadow-2xl overflow-hidden relative flex flex-col justify-between" style={{ minHeight: '100vh', maxHeight: '100vh' }} id="simulated-smartphone">
+        <div className="w-full bg-slate-950 lg:border-[10px] lg:border-slate-800 lg:rounded-[42px] lg:shadow-2xl overflow-hidden relative flex flex-col justify-between animate-fade-in" style={{ minHeight: '100vh', maxHeight: '100vh' }} id="simulated-smartphone">
             
             {/* Top Ear Speaker Indicator (Invisible on actual phone screens) */}
             <div className="hidden lg:block absolute top-2.5 left-1/2 transform -translate-x-1/2 w-28 h-4 bg-slate-800 rounded-full z-20"></div>
 
-            {/* Main Inside Frame */}
-            <div className="flex-1 flex flex-col overflow-y-auto bg-slate-50/70 scrollbar-none" id="internal-viewport">
+            {/* Main Inside Frame - Stylized with sophisticated soft gradient background */}
+            <div className="flex-1 flex flex-col overflow-y-auto bg-gradient-to-b from-[#eef2ff] via-[#f8fafc] to-[#e0e7ff]/75 scrollbar-none relative" id="internal-viewport">
+              
+              {/* Dynamic Glowing Accent Blobs (Behind cards, completely non-obstructive to text legibility) */}
+              <div className="absolute top-[150px] left-[-30px] w-48 h-48 bg-sky-200/40 rounded-full filter blur-3xl pointer-events-none z-0"></div>
+              <div className="absolute top-[480px] right-[-30px] w-48 h-48 bg-indigo-300/30 rounded-full filter blur-3xl pointer-events-none z-0"></div>
+
               {/* Official Elegant Header */}
               <Header 
                 hasGasUrl={!!settings.gasUrl} 
@@ -134,7 +139,7 @@ export default function App() {
               />
 
               {/* Main Tab Views Scrollable Container */}
-              <main className="flex-1 px-4 py-5 pb-24 overflow-y-auto" id="app-content-view">
+              <main className="flex-1 px-4 py-5 pb-24 overflow-y-auto relative z-10" id="app-content-view">
                 {activeTab === 'formulir' && (
                   <FormInput 
                     settings={settings} 
