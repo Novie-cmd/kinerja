@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Calendar, Clock, AlignLeft, Image as ImageIcon, Link as LinkIcon, Send, AlertTriangle, CheckCircle, FileUp, X, Sparkles } from 'lucide-react';
+import { Calendar, Clock, AlignLeft, Image as ImageIcon, Link as LinkIcon, Send, AlertTriangle, CheckCircle, FileUp, X, Sparkles, Info } from 'lucide-react';
 import { KinerjaReport, AppSettings } from '../types';
 
 interface FormInputProps {
@@ -204,7 +204,17 @@ export default function FormInput({ settings, onAddReport }: FormInputProps) {
               newReport.fotoUrl = resJson.fileUrl;
               
               // Map saved Google Drive URLs back to our attachments
-              const urls = resJson.fileUrl.split(', ');
+              const urls = resJson.fileUrl.split(', ').map((u: string) => {
+                let cleanUrl = u.trim();
+                if (cleanUrl.startsWith('Link ')) {
+                  const colonIdx = cleanUrl.indexOf(': ');
+                  if (colonIdx !== -1) {
+                    cleanUrl = cleanUrl.substring(colonIdx + 2).trim();
+                  }
+                }
+                return cleanUrl;
+              });
+
               if (newReport.attachments && urls.length === newReport.attachments.length) {
                 newReport.attachments = newReport.attachments.map((item, idx) => ({
                   ...item,
@@ -354,7 +364,7 @@ export default function FormInput({ settings, onAddReport }: FormInputProps) {
           <div className="space-y-3">
             <div className="flex items-center justify-between ml-1">
               <label className="text-xs font-bold text-slate-500 uppercase block">
-                Lampiran Foto / File kegiatan <span className="text-indigo-600 font-extrabold font-mono">(Dapat melampirkan lebih dari 1)</span>
+                Lampiran Foto / File Kegiatan <span className="text-indigo-600 font-extrabold font-mono">(Seluruh berkas terdokumentasi di Google Sheet)</span>
               </label>
               {attachments.length > 0 && (
                 <button
@@ -390,6 +400,18 @@ export default function FormInput({ settings, onAddReport }: FormInputProps) {
                 <p className="text-[10px] text-slate-400 mt-1">Anda dapat memilih satu atau banyak file sekaligus • JPG, PNG, PDF (Maks. 5 MB per file)</p>
               </div>
             </div>
+
+            {/* Notification explaining that multiple files get documented on Google Sheet */}
+            {attachments.length > 0 && (
+              <div className="bg-emerald-50/80 border border-emerald-100 rounded-xl p-3 flex items-start gap-2.5 text-left animate-fade-in" id="multi-doc-google-sheet-info">
+                <Info size={15} className="text-emerald-650 mt-0.5 flex-shrink-0" />
+                <div className="flex-1">
+                  <p className="text-[10px] text-emerald-800 leading-normal font-medium">
+                    <span className="font-bold">Informasi Integrasi:</span> Seluruh <span className="font-extrabold text-emerald-990">{attachments.length} berkas</span> yang Anda pilih akan diunggah ke Google Drive dan didokumentasikan di baris Google Sheet Anda sebagai <span className="font-bold font-mono text-indigo-700">Link 1, Link 2, dst.</span> secara rapi dan real-time!
+                  </p>
+                </div>
+              </div>
+            )}
 
             {/* Attachments List Grid */}
             {attachments.length > 0 && (

@@ -163,7 +163,7 @@ function doPost(e) {
             var blob = Utilities.newBlob(decoded, contentType, att.name);
             var file = DriveApp.createFile(blob);
             file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
-            urls.push(file.getUrl());
+            urls.push("Link " + (i + 1) + ": " + file.getUrl());
           } catch(err) {
             urls.push("Gagal simpan " + att.name + ": " + err.toString());
           }
