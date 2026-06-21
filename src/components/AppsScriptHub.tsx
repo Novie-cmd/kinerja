@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Copy, Check, FileCode, HelpCircle, HardDrive, Database, Sliders, ExternalLink, Folder, Eye, Download, Info, Wifi, CheckCircle, X } from 'lucide-react';
+import { Copy, Check, FileCode, HelpCircle, HardDrive, Database, Sliders, ExternalLink, Folder, Eye, Download, Info, Wifi, CheckCircle, X, Lock } from 'lucide-react';
 import { AppSettings } from '../types';
 import { BACKUP_FILES } from '../utils/projectBackup';
 
@@ -12,6 +12,13 @@ export default function AppsScriptHub({ settings, onSaveSettings }: AppsScriptHu
   const [activeSegmentTab, setActiveSegmentTab] = useState<'koneksi' | 'script' | 'backup'>('koneksi');
   const [copiedScript, setCopiedScript] = useState<string | null>(null);
   const [showGuide, setShowGuide] = useState(true);
+
+  // Password protection state for Google Apps Script Code
+  const [showPasswordPrompt, setShowPasswordPrompt] = useState(false);
+  const [passwordInput, setPasswordInput] = useState('');
+  const [passwordError, setPasswordError] = useState('');
+  const [pendingCodeToCopy, setPendingCodeToCopy] = useState<string | null>(null);
+  const [pendingTypeToCopy, setPendingTypeToCopy] = useState<'gs' | null>(null);
   
   // Local temporary settings
   const [gasUrl, setGasUrl] = useState(settings.gasUrl);
@@ -270,9 +277,29 @@ function doPost(e) {
 }`;
 
   const handleCopy = (code: string, type: 'gs') => {
-    navigator.clipboard.writeText(code);
-    setCopiedScript(type);
-    setTimeout(() => setCopiedScript(null), 3000);
+    setPendingCodeToCopy(code);
+    setPendingTypeToCopy(type);
+    setShowPasswordPrompt(true);
+    setPasswordInput('');
+    setPasswordError('');
+  };
+
+  const handleVerifyPassword = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (passwordInput === 'Fariz180106') {
+      if (pendingCodeToCopy && pendingTypeToCopy) {
+        navigator.clipboard.writeText(pendingCodeToCopy);
+        setCopiedScript(pendingTypeToCopy);
+        setTimeout(() => setCopiedScript(null), 3000);
+      }
+      setShowPasswordPrompt(false);
+      setPendingCodeToCopy(null);
+      setPendingTypeToCopy(null);
+      setPasswordInput('');
+      setPasswordError('');
+    } else {
+      setPasswordError('Password salah! Silakan coba lagi.');
+    }
   };
 
   const handleSave = (e: React.FormEvent) => {
@@ -731,6 +758,64 @@ function doPost(e) {
           >
             <X size={15} />
           </button>
+        </div>
+      )}
+
+      {/* Password Prompt Modal Dialogue */}
+      {showPasswordPrompt && (
+        <div className="fixed inset-0 z-[1050] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-fade-in" id="password-verification-dialogue">
+          <div className="bg-white rounded-3xl max-w-sm w-full p-6 shadow-2xl border border-slate-100 text-center space-y-4">
+            <div className="mx-auto w-12 h-12 rounded-full bg-indigo-50 flex items-center justify-center text-indigo-650">
+              <Lock size={22} className="text-indigo-600" />
+            </div>
+            <div>
+              <h3 className="text-base font-bold text-slate-800">Verifikasi Kode</h3>
+              <p className="text-xs text-slate-500 mt-1 leading-relaxed">
+                Salin Kode Google Apps Script memerlukan verifikasi kode akses Anda.
+              </p>
+            </div>
+            <form onSubmit={handleVerifyPassword} className="space-y-3.5">
+              <div>
+                <input
+                  type="password"
+                  value={passwordInput}
+                  onChange={(e) => {
+                    setPasswordInput(e.target.value);
+                    if (passwordError) setPasswordError('');
+                  }}
+                  autoFocus
+                  placeholder="Masukkan Password Akses"
+                  className="w-full px-4 py-3 bg-slate-50 border border-slate-200 focus:border-indigo-550 focus:bg-white text-xs text-center font-bold rounded-xl outline-none transition-all placeholder:text-slate-400"
+                />
+                {passwordError && (
+                  <p className="text-[10px] text-rose-500 font-bold mt-1.5 animate-pulse text-center">
+                    ⚠️ {passwordError}
+                  </p>
+                )}
+              </div>
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowPasswordPrompt(false);
+                    setPendingCodeToCopy(null);
+                    setPendingTypeToCopy(null);
+                    setPasswordInput('');
+                    setPasswordError('');
+                  }}
+                  className="flex-1 py-3 bg-slate-100 hover:bg-slate-200 active:bg-slate-300 text-slate-600 rounded-xl text-xs font-bold transition-all cursor-pointer"
+                >
+                  Batal
+                </button>
+                <button
+                  type="submit"
+                  className="flex-1 py-3 bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-850 text-white rounded-xl text-xs font-bold transition-all shadow-md shadow-indigo-150 cursor-pointer"
+                >
+                  Konfirmasi
+                </button>
+              </div>
+            </form>
+          </div>
         </div>
       )}
     </div>
