@@ -107,12 +107,14 @@ export default function AppsScriptHub({ settings, onSaveSettings }: AppsScriptHu
  * Menampung input data dari web app Laporan E-Kinerja dan menyimpannya 
  * ke Google Sheet serta mengunduh berkas gambar langsung ke Google Drive Anda.
  * 
- * Struktur Kolom Google Sheet:
+ * Struktur Kolom Google Sheet yang direkomendasikan:
  * Kolom A : Tanggal
  * Kolom B : Waktu
  * Kolom C : Uraian
- * Kolom D : Foto (Link File Berkas Di Google Drive)
- * Kolom E : Link (Tautan Pendukung)
+ * Kolom D : Link 1 (Tautan Berkas 1)
+ * Kolom E : Link 2 (Tautan Berkas 2)
+ * Kolom F : Link 3 (Tautan Berkas 3)
+ * Kolom G : Link Pendukung Utama
  */
 
 function doGet(e) {
@@ -139,15 +141,28 @@ function doPost(e) {
     // Akses Spreadsheet aktif
     var sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
     
+    // Jika sheet masih sepenuhnya kosong, buat header otomatis pada baris pertama demi kenyamanan Anda
+    if (sheet.getLastRow() === 0) {
+      sheet.appendRow([
+        "Tanggal", 
+        "Waktu", 
+        "Uraian", 
+        "Link 1", 
+        "Link 2", 
+        "Link 3", 
+        "Link Pendukung"
+      ]);
+    }
+    
     var tanggal = data.tanggal || "";
     var waktu = data.waktu || "";
     var uraian = data.uraian || "";
     var linkPendukung = data.link || "";
     var fotoUrl = "";
+    var rawUrls = [];
     
     // Jika ada kiriman multiple attachments (Fungsi multi-file/image)
     if (data.attachments && data.attachments.length > 0) {
-      var urls = [];
       for (var i = 0; i < data.attachments.length; i++) {
         var att = data.attachments[i];
         if (att.base64 && att.name) {
@@ -163,48 +178,82 @@ function doPost(e) {
             var blob = Utilities.newBlob(decoded, contentType, att.name);
             var file = DriveApp.createFile(blob);
             file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
-            urls.push("Link " + (i + 1) + ": " + file.getUrl());
+            rawUrls.push(file.getUrl());
           } catch(err) {
-            urls.push("Gagal simpan " + att.name + ": " + err.toString());
+            rawUrls.push("Gagal simpan " + att.name + ": " + err.toString());
           }
         }
       }
-      fotoUrl = urls.join(", ");
+      
+      // Gabungkan label untuk dikembalikan ke aplikasi React agar termuat di riwayat
+      var linkLabels = [];
+      for (var i = 0; i < rawUrls.length; i++) {
+        linkLabels.push("Link " + (i + 1) + ": " + rawUrls[i]);
+      }
+      fotoUrl = linkLabels.join(", ");
+      
     } else if (data.fotoBase64 && data.fotoName) {
       // Jika ada satu kiriman foto/file berkas dalam format Base64 (Mendukung versi lama)
       try {
         var base64Data = data.fotoBase64.split(",")[1] || data.fotoBase64;
         var decoded = Utilities.base64Decode(base64Data);
         
-        // Tentukan tipe konten file
         var contentType = "image/jpeg";
         if (data.fotoName.endsWith(".png")) contentType = "image/png";
         if (data.fotoName.endsWith(".pdf")) contentType = "application/pdf";
         
         var blob = Utilities.newBlob(decoded, contentType, data.fotoName);
-        
-        // Simpan file berkas ke Google Drive akar (atau folder tertentu)
         var file = DriveApp.createFile(blob);
-        
-        // Atur izin berkas agar bisa diakses public via link
         file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
         
         fotoUrl = file.getUrl();
+        rawUrls.push(fotoUrl);
       } catch (uploadError) {
         fotoUrl = "Gagal simpan file di Drive: " + uploadError.toString();
+        rawUrls.push(fotoUrl);
       }
     } else if (data.fotoUrl) {
       fotoUrl = data.fotoUrl;
+      rawUrls.push(fotoUrl);
     }
     
-    // Kirim data ke sheet baru (Baris Terakhir)
-    sheet.appendRow([
-      tanggal,
-      waktu,
-      uraian,
-      fotoUrl,
-      linkPendukung
-    ]);
+    // Tentukan kolom secara cerdas berdasarkan penamaan baris pertama (Header Row)
+    var colTanggal = 1;       // Kolom A
+    var colWaktu = 2;         // Kolom B
+    var colUraian = 3;        // Kolom C
+    var colLink1 = 4;         // Kolom D (Link 1 / Foto 1)
+    var colLink2 = 5;         // Kolom E (Link 2 / Foto 2)
+    var colLink3 = 6;         // Kolom F (Link 3 / Foto 3)
+    var colLinkPendukung = 7;  // Kolom G (Link Pendukung Utama)
+    
+    try {
+      var lastCol = sheet.getLastColumn();
+      if (lastCol > 0) {
+        var headers = sheet.getRange(1, 1, 1, lastCol).getValues()[0];
+        for (var k = 0; k < headers.length; k++) {
+          var headerName = (headers[k] || "").toString().toLowerCase().trim();
+          if (headerName === "tanggal") colTanggal = k + 1;
+          else if (headerName === "waktu") colWaktu = k + 1;
+          else if (headerName === "uraian" || headerName === "uraian kerja" || headerName === "uraian_kinerja") colUraian = k + 1;
+          else if (headerName === "link 1" || headerName === "link1" || headerName === "foto 1" || headerName === "foto" || headerName === "link_foto") colLink1 = k + 1;
+          else if (headerName === "link 2" || headerName === "link2" || headerName === "foto 2") colLink2 = k + 1;
+          else if (headerName === "link 3" || headerName === "link3" || headerName === "foto 3") colLink3 = k + 1;
+          else if (headerName === "link" || headerName === "link pendukung" || headerName === "tautan" || headerName === "tautan pendukung") colLinkPendukung = k + 1;
+        }
+      }
+    } catch (errHeader) {
+      // Menggunakan default jika terhambat error
+    }
+    
+    // Tulis data ke baris baru pada masing-masing sel kolom secara presisi dan rapi
+    var nextRow = sheet.getLastRow() + 1;
+    sheet.getRange(nextRow, colTanggal).setValue(tanggal);
+    sheet.getRange(nextRow, colWaktu).setValue(waktu);
+    sheet.getRange(nextRow, colUraian).setValue(uraian);
+    sheet.getRange(nextRow, colLink1).setValue(rawUrls[0] || "");
+    sheet.getRange(nextRow, colLink2).setValue(rawUrls[1] || "");
+    sheet.getRange(nextRow, colLink3).setValue(rawUrls[2] || "");
+    sheet.getRange(nextRow, colLinkPendukung).setValue(linkPendukung);
     
     response.status = "success";
     response.message = "Data berhasil disimpan ke Google Sheets!";
@@ -502,13 +551,18 @@ function doPost(e) {
                 </li>
                 <li className="leading-relaxed">
                   <strong>Atur Judul Kolom di Baris 1</strong> sebagai berikut:
-                  <div className="grid grid-cols-5 gap-1.5 max-w-lg my-2.5 font-mono text-center text-[10px]">
+                  <div className="grid grid-cols-4 sm:grid-cols-7 gap-1.5 max-w-2xl my-2.5 font-mono text-center text-[9px] sm:text-[10px]">
                     <div className="bg-white text-indigo-700 p-2 border border-slate-200 shadow-3xs rounded-xl">Kolom A<br/><strong>Tanggal</strong></div>
                     <div className="bg-white text-indigo-700 p-2 border border-slate-200 shadow-3xs rounded-xl">Kolom B<br/><strong>Waktu</strong></div>
                     <div className="bg-white text-indigo-700 p-2 border border-slate-200 shadow-3xs rounded-xl">Kolom C<br/><strong>Uraian</strong></div>
-                    <div className="bg-white text-indigo-700 p-2 border border-slate-200 shadow-3xs rounded-xl">Kolom D<br/><strong>Foto</strong></div>
-                    <div className="bg-white text-indigo-700 p-2 border border-slate-200 shadow-3xs rounded-xl">Kolom E<br/><strong>Link</strong></div>
+                    <div className="bg-white text-indigo-700 p-2 border border-slate-200 shadow-3xs rounded-xl">Kolom D<br/><strong>Link 1</strong></div>
+                    <div className="bg-white text-indigo-700 p-2 border border-slate-200 shadow-3xs rounded-xl">Kolom E<br/><strong>Link 2</strong></div>
+                    <div className="bg-white text-indigo-700 p-2 border border-slate-200 shadow-3xs rounded-xl">Kolom F<br/><strong>Link 3</strong></div>
+                    <div className="bg-white text-indigo-700 p-2 border border-slate-200 shadow-3xs rounded-xl">Kolom G<br/><strong>Link Pendukung</strong></div>
                   </div>
+                  <p className="text-[10px] text-indigo-650 font-medium bg-indigo-50/50 p-2 rounded-xl border border-indigo-100/50 mt-1">
+                    💡 <strong>Tips Otomatis:</strong> Jika Google Sheet Anda masih kosong tanpa header apa pun, kode Apps Script baru kami akan <strong>secara otomatis membuat struktur header kolom di atas</strong> pada baris pertama bagi Anda ketika laporan pertama kali dikirimkan!
+                  </p>
                 </li>
                 <li className="leading-relaxed">
                   Buka spreadsheet Anda lalu klik menu <strong>Ekstensi (Extensions)</strong> &gt; <strong>Apps Script</strong> di bagian atas.
