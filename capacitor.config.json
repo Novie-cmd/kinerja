@@ -1,0 +1,6 @@
+{
+  "appId": "com.laporankerja.app",
+  "appName": "Laporan Kinerja Harian",
+  "webDir": "dist",
+  "bundledWebRuntime": false
+}
