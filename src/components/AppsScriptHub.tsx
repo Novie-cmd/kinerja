@@ -357,12 +357,12 @@ function doPost(e) {
   return (
     <div className="space-y-6" id="apps-script-hub">
       {/* Dynamic Segmented Navigation Tabs */}
-      <div className="flex bg-slate-100 border border-slate-200/60 p-1 rounded-2xl gap-1" id="hub-main-tabs">
+      <div className="flex bg-sky-50/80 border border-sky-100 p-1 rounded-2xl gap-1" id="hub-main-tabs">
         <button
           onClick={() => setActiveSegmentTab('koneksi')}
           className={`flex-1 py-3 text-center text-xs font-bold rounded-xl transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
             activeSegmentTab === 'koneksi'
-              ? 'bg-white text-indigo-700 shadow-sm border border-slate-200/30'
+              ? 'bg-white text-sky-700 shadow-sm border border-sky-100'
               : 'text-slate-500 hover:text-slate-800'
           }`}
         >
@@ -373,7 +373,7 @@ function doPost(e) {
           onClick={() => setActiveSegmentTab('script')}
           className={`flex-1 py-3 text-center text-xs font-bold rounded-xl transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
             activeSegmentTab === 'script'
-              ? 'bg-white text-indigo-700 shadow-sm border border-slate-200/30'
+              ? 'bg-white text-sky-700 shadow-sm border border-sky-100'
               : 'text-slate-500 hover:text-slate-800'
           }`}
         >
@@ -384,7 +384,7 @@ function doPost(e) {
           onClick={() => setActiveSegmentTab('backup')}
           className={`flex-1 py-3 text-center text-xs font-bold rounded-xl transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
             activeSegmentTab === 'backup'
-              ? 'bg-white text-indigo-700 shadow-sm border border-slate-200/30'
+              ? 'bg-white text-sky-700 shadow-sm border border-sky-100'
               : 'text-slate-500 hover:text-slate-800'
           }`}
         >
@@ -395,13 +395,13 @@ function doPost(e) {
 
       {activeSegmentTab === 'koneksi' && (
         /* Settings Card */
-        <div className="bg-white rounded-[32px] border border-slate-100 shadow-xl shadow-slate-200/40 overflow-hidden animate-fade-in" id="card-integration-settings">
-          <div className="bg-indigo-600 px-6 py-5 flex items-center justify-between shadow-lg shadow-indigo-100">
+        <div className="bg-white/95 backdrop-blur-sm rounded-[32px] border border-sky-100 shadow-xl shadow-sky-100/60 overflow-hidden animate-fade-in" id="card-integration-settings">
+          <div className="bg-gradient-to-r from-blue-600 via-sky-600 to-indigo-600 px-6 py-5 flex items-center justify-between shadow-lg shadow-sky-200">
             <div className="flex items-center gap-3 text-white">
               <Sliders size={20} className="text-white animate-pulse" />
               <span className="font-bold tracking-tight text-sm md:text-base">Pengaturan Integrasi</span>
             </div>
-            <span className="px-3 py-1 bg-white/15 text-white text-[10px] uppercase rounded-full font-bold tracking-wider">
+            <span className="px-3 py-1 bg-white/20 backdrop-blur-xs text-white text-[10px] uppercase rounded-full font-bold tracking-wider">
               Konfigurasi
             </span>
           </div>
@@ -414,44 +414,44 @@ function doPost(e) {
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-1.5">
-              <label className="block text-xs font-bold text-slate-500 uppercase ml-1">Nama Pegawai</label>
+              <label className="block text-xs font-bold text-slate-600 uppercase ml-1">Nama Pegawai</label>
               <input
                 type="text"
                 placeholder="Ahmad Fauzi, S.Kom"
                 value={employeeName}
                 onChange={(e) => setEmployeeName(e.target.value)}
-                className="w-full px-4 py-3 text-sm rounded-2xl bg-slate-50 border border-transparent focus:bg-white focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition-all outline-none text-slate-800 font-medium"
+                className="w-full px-4 py-3 text-sm rounded-2xl bg-sky-50/50 border border-sky-100/80 focus:bg-white focus:border-sky-500 focus:ring-4 focus:ring-sky-500/15 transition-all outline-none text-slate-800 font-medium"
               />
             </div>
             
             <div className="space-y-1.5">
-              <label className="block text-xs font-bold text-slate-500 uppercase ml-1">NIP / ID Pegawai</label>
+              <label className="block text-xs font-bold text-slate-600 uppercase ml-1">NIP / ID Pegawai</label>
               <input
                 type="text"
                 placeholder="19920315 201804 1 003"
                 value={employeeId}
                 onChange={(e) => setEmployeeId(e.target.value)}
-                className="w-full px-4 py-3 text-sm rounded-2xl bg-slate-50 border border-transparent focus:bg-white focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition-all outline-none text-slate-800 font-medium"
+                className="w-full px-4 py-3 text-sm rounded-2xl bg-sky-50/50 border border-sky-100/80 focus:bg-white focus:border-sky-500 focus:ring-4 focus:ring-sky-500/15 transition-all outline-none text-slate-800 font-medium"
               />
             </div>
           </div>
 
           <div className="space-y-1.5">
-            <label className="block text-xs font-bold text-slate-500 uppercase ml-1">Jabatan / Satuan Kerja</label>
+            <label className="block text-xs font-bold text-slate-600 uppercase ml-1">Jabatan / Satuan Kerja</label>
             <input
               type="text"
               placeholder="Pranata Komputer Ahli Pertama"
               value={position}
               onChange={(e) => setPosition(e.target.value)}
-              className="w-full px-4 py-3 text-sm rounded-2xl bg-slate-50 border border-transparent focus:bg-white focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition-all outline-none text-slate-800 font-medium"
+              className="w-full px-4 py-3 text-sm rounded-2xl bg-sky-50/50 border border-sky-100/80 focus:bg-white focus:border-sky-500 focus:ring-4 focus:ring-sky-500/15 transition-all outline-none text-slate-800 font-medium"
             />
           </div>
 
           <div className="space-y-1.5">
-            <label className="block text-xs font-bold text-slate-500 uppercase ml-1 flex items-center justify-between">
+            <label className="block text-xs font-bold text-slate-600 uppercase ml-1 flex items-center justify-between">
               <span>Google Apps Script Web App URL</span>
               {gasUrl ? (
-                <span className="text-indigo-700 text-[9px] font-bold bg-indigo-50 px-2 py-0.5 rounded-full border border-indigo-100 flex items-center gap-1">
+                <span className="text-sky-700 text-[9px] font-bold bg-sky-50 px-2 py-0.5 rounded-full border border-sky-100 flex items-center gap-1">
                   <Database size={9} /> Terhubung Live
                 </span>
               ) : (
@@ -468,7 +468,7 @@ function doPost(e) {
                 setGasUrl(e.target.value);
                 setTestResult({ status: 'idle', message: '' });
               }}
-              className="w-full px-4 py-3 text-xs sm:text-sm font-mono rounded-2xl bg-slate-50 border border-transparent focus:bg-white focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition-all outline-none text-slate-705 font-medium"
+              className="w-full px-4 py-3 text-xs sm:text-sm font-mono rounded-2xl bg-sky-50/50 border border-sky-100/80 focus:bg-white focus:border-sky-500 focus:ring-4 focus:ring-sky-500/15 transition-all outline-none text-slate-800 font-medium"
             />
             <p className="text-[10px] text-slate-400 mt-1 italic ml-1">
               *Kosongkan untuk mengaktifkan simulasi LocalStorage. Isi untuk langsung tersinkronisasi ke Google Sheet Anda.
@@ -476,16 +476,16 @@ function doPost(e) {
           </div>
 
           {gasUrl && (
-            <div className="bg-slate-50 border border-slate-200/60 p-4 rounded-2xl space-y-3 animate-fade-in">
+            <div className="bg-sky-50/50 border border-sky-100/80 p-4 rounded-2xl space-y-3 animate-fade-in">
               <div className="flex items-center justify-between">
                 <span className="text-[11px] font-bold text-slate-600 flex items-center gap-1.5">
-                  <Wifi className="text-indigo-600" size={14} /> Keandalan Jalur Data
+                  <Wifi className="text-sky-600" size={14} /> Keandalan Jalur Data
                 </span>
                 <button
                   type="button"
                   onClick={handleTestConnection}
                   disabled={testingConnection}
-                  className="px-3 py-1.5 bg-indigo-550 hover:bg-indigo-600 active:bg-indigo-700 disabled:bg-slate-200 text-white disabled:text-slate-400 text-[10px] font-extrabold rounded-xl shadow-2xs transition-all cursor-pointer flex items-center gap-1"
+                  className="px-3 py-1.5 bg-gradient-to-r from-blue-600 to-sky-600 hover:from-blue-700 hover:to-sky-700 disabled:bg-slate-200 text-white disabled:text-slate-400 text-[10px] font-extrabold rounded-xl shadow-xs transition-all cursor-pointer flex items-center gap-1"
                 >
                   {testingConnection ? (
                     <>
@@ -513,7 +513,7 @@ function doPost(e) {
           <div className="pt-2">
             <button
               type="submit"
-              className="w-full py-4 text-center bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-2xl shadow-lg shadow-indigo-150 transition-all focus:outline-none transform active:scale-95"
+              className="w-full py-4 text-center bg-gradient-to-r from-blue-600 via-sky-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-bold rounded-2xl shadow-lg shadow-sky-200 transition-all focus:outline-none transform active:scale-95 cursor-pointer"
             >
               {saveSuccess ? '✓ Konfigurasi Berhasil Disimpan!' : 'Simpan Konfigurasi Integrasi'}
             </button>

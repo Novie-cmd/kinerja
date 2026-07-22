@@ -110,26 +110,29 @@ export default function App() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 lg:bg-gradient-to-tr lg:from-[#111827] lg:via-[#1e293b] lg:to-[#0f172a] flex flex-col items-center justify-start lg:py-10 lg:px-4 font-sans antialiased text-slate-800" id="main-view-wrapper">
+    <div className="min-h-screen bg-sky-50/80 lg:bg-gradient-to-br lg:from-blue-100/80 lg:via-sky-50 lg:to-indigo-100/90 flex flex-col items-center justify-start lg:py-10 lg:px-4 font-sans antialiased text-slate-800 relative overflow-hidden" id="main-view-wrapper">
       
-      {/* Premium Natural Ambient Overlay (Visible on large screens) */}
-      <div className="hidden lg:block absolute top-0 left-0 w-full h-[450px] bg-gradient-to-b from-indigo-500/10 via-transparent to-transparent pointer-events-none z-0"></div>
+      {/* Premium Natural Bright Ambient Overlay (Visible on large screens) */}
+      <div className="hidden lg:block absolute top-0 left-0 w-full h-[500px] bg-gradient-to-b from-sky-300/30 via-indigo-200/15 to-transparent pointer-events-none z-0"></div>
+      <div className="hidden lg:block absolute -top-24 -right-24 w-96 h-96 bg-cyan-200/50 rounded-full filter blur-3xl pointer-events-none z-0"></div>
+      <div className="hidden lg:block absolute bottom-10 -left-20 w-96 h-96 bg-blue-200/40 rounded-full filter blur-3xl pointer-events-none z-0"></div>
 
       {/* Centered Smartphone Container */}
       <div className="w-full max-w-sm sm:max-w-md lg:max-w-xl flex justify-center z-10" id="phone-app-container">
         
         {/* Smartphone Simulator Frame Wrapper on Desktop */}
-        <div className="w-full bg-slate-950 lg:border-[10px] lg:border-slate-800 lg:rounded-[42px] lg:shadow-2xl overflow-hidden relative flex flex-col justify-between animate-fade-in" style={{ minHeight: '100vh', maxHeight: '100vh' }} id="simulated-smartphone">
+        <div className="w-full bg-white lg:border-[10px] lg:border-white lg:rounded-[42px] lg:shadow-2xl lg:shadow-sky-900/15 overflow-hidden relative flex flex-col justify-between animate-fade-in" style={{ minHeight: '100vh', maxHeight: '100vh' }} id="simulated-smartphone">
             
             {/* Top Ear Speaker Indicator (Invisible on actual phone screens) */}
-            <div className="hidden lg:block absolute top-2.5 left-1/2 transform -translate-x-1/2 w-28 h-4 bg-slate-800 rounded-full z-20"></div>
+            <div className="hidden lg:block absolute top-2.5 left-1/2 transform -translate-x-1/2 w-28 h-3.5 bg-slate-200 rounded-full z-20"></div>
 
-            {/* Main Inside Frame - Stylized with sophisticated soft gradient background */}
-            <div className="flex-1 flex flex-col overflow-y-auto bg-gradient-to-b from-[#eef2ff] via-[#f8fafc] to-[#e0e7ff]/75 scrollbar-none relative" id="internal-viewport">
+            {/* Main Inside Frame - Stylized with bright cheerful soft gradient background */}
+            <div className="flex-1 flex flex-col overflow-y-auto bg-gradient-to-b from-sky-50/90 via-white to-blue-50/80 scrollbar-none relative" id="internal-viewport">
               
-              {/* Dynamic Glowing Accent Blobs (Behind cards, completely non-obstructive to text legibility) */}
-              <div className="absolute top-[150px] left-[-30px] w-48 h-48 bg-sky-200/40 rounded-full filter blur-3xl pointer-events-none z-0"></div>
-              <div className="absolute top-[480px] right-[-30px] w-48 h-48 bg-indigo-300/30 rounded-full filter blur-3xl pointer-events-none z-0"></div>
+              {/* Dynamic Glowing Accent Blobs */}
+              <div className="absolute top-[120px] left-[-30px] w-56 h-56 bg-sky-200/60 rounded-full filter blur-3xl pointer-events-none z-0"></div>
+              <div className="absolute top-[450px] right-[-30px] w-56 h-56 bg-cyan-200/50 rounded-full filter blur-3xl pointer-events-none z-0"></div>
+              <div className="absolute bottom-[100px] left-[20px] w-48 h-48 bg-indigo-200/40 rounded-full filter blur-3xl pointer-events-none z-0"></div>
 
               {/* Official Elegant Header */}
               <Header 

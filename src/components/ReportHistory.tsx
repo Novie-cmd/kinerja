@@ -69,26 +69,26 @@ export default function ReportHistory({ reports, onDeleteReport, onClearAll }: R
   return (
     <div className="space-y-5" id="report-history">
       {/* Search and Filters */}
-      <div className="bg-white rounded-[24px] border border-slate-100 shadow-sm p-5 space-y-4" id="filters-container">
+      <div className="bg-white/95 backdrop-blur-sm rounded-[24px] border border-sky-100 shadow-md shadow-sky-100/40 p-5 space-y-4" id="filters-container">
         <div className="relative">
-          <Search size={16} className="absolute left-4 top-3.5 text-slate-400" />
+          <Search size={16} className="absolute left-4 top-3.5 text-sky-500" />
           <input
             type="text"
             placeholder="Cari kata kunci kegiatan atau tanggal (YYYY-MM-DD)..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-11 pr-4 py-3 text-sm rounded-2xl border border-transparent bg-slate-50 focus:bg-white focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 outline-none transition-all text-slate-700 font-sans font-medium"
+            className="w-full pl-11 pr-4 py-3 text-sm rounded-2xl border border-sky-100/80 bg-sky-50/50 focus:bg-white focus:border-sky-500 focus:ring-4 focus:ring-sky-500/15 outline-none transition-all text-slate-700 font-sans font-medium"
           />
         </div>
         
         <div className="flex flex-wrap items-center justify-between gap-3 pt-1">
-          {/* Status Buttons in Natural Indigo style */}
-          <div className="flex bg-slate-50 border border-slate-100 p-1 rounded-2xl gap-1 text-[11px] font-bold" id="toggle-list-status">
+          {/* Status Buttons in Bright Sky Style */}
+          <div className="flex bg-sky-50/80 border border-sky-100 p-1 rounded-2xl gap-1 text-[11px] font-bold" id="toggle-list-status">
             <button
               onClick={() => setStatusFilter('All')}
               className={`px-3.5 py-1.5 rounded-xl transition-all cursor-pointer ${
                 statusFilter === 'All' 
-                  ? 'bg-white text-indigo-700 shadow-md shadow-slate-250/30' 
+                  ? 'bg-white text-sky-700 shadow-sm shadow-sky-200/50' 
                   : 'text-slate-500 hover:text-slate-800'
               }`}
             >
@@ -98,7 +98,7 @@ export default function ReportHistory({ reports, onDeleteReport, onClearAll }: R
               onClick={() => setStatusFilter('Sent')}
               className={`px-3.5 py-1.5 rounded-xl transition-all cursor-pointer ${
                 statusFilter === 'Sent' 
-                  ? 'bg-white text-indigo-700 shadow-md shadow-slate-250/30' 
+                  ? 'bg-white text-sky-700 shadow-sm shadow-sky-200/50' 
                   : 'text-slate-500 hover:text-slate-800'
               }`}
             >
@@ -108,7 +108,7 @@ export default function ReportHistory({ reports, onDeleteReport, onClearAll }: R
               onClick={() => setStatusFilter('Draft')}
               className={`px-3.5 py-1.5 rounded-xl transition-all cursor-pointer ${
                 statusFilter === 'Draft' 
-                  ? 'bg-white text-indigo-700 shadow-md shadow-slate-250/30' 
+                  ? 'bg-white text-sky-700 shadow-sm shadow-sky-200/50' 
                   : 'text-slate-500 hover:text-slate-800'
               }`}
             >
@@ -122,7 +122,7 @@ export default function ReportHistory({ reports, onDeleteReport, onClearAll }: R
                 <button
                   type="button"
                   onClick={handleDownloadCSV}
-                  className="px-3 py-2 border border-slate-200 text-slate-600 hover:text-indigo-650 hover:bg-slate-50 rounded-xl flex items-center gap-1.5 font-bold cursor-pointer transition-all"
+                  className="px-3 py-2 border border-sky-200/80 text-sky-700 hover:bg-sky-50 rounded-xl flex items-center gap-1.5 font-bold cursor-pointer transition-all"
                 >
                   <Download size={13} /> Export CSV
                 </button>
@@ -141,16 +141,16 @@ export default function ReportHistory({ reports, onDeleteReport, onClearAll }: R
 
       {/* Grid Stats */}
       <div className="grid grid-cols-3 gap-3" id="sub-statistics">
-        <div className="bg-gradient-to-br from-indigo-50 to-indigo-100/30 border border-indigo-100/60 p-3.5 rounded-2xl text-center">
-          <span className="block text-[10px] text-indigo-600 font-bold uppercase tracking-wider">Total</span>
+        <div className="bg-gradient-to-br from-sky-100/90 to-blue-50 border border-sky-200/80 p-3.5 rounded-2xl text-center shadow-xs">
+          <span className="block text-[10px] text-sky-700 font-bold uppercase tracking-wider">Total</span>
           <span className="text-xl font-extrabold text-slate-900 font-mono tracking-tight">{totalReports}</span>
         </div>
-        <div className="bg-gradient-to-br from-indigo-50/50 to-indigo-100/10 border border-indigo-100/30 p-3.5 rounded-2xl text-center">
-          <span className="block text-[10px] text-slate-500 font-bold uppercase tracking-wider">Hari Ini</span>
+        <div className="bg-gradient-to-br from-blue-50 to-indigo-50/80 border border-blue-100/80 p-3.5 rounded-2xl text-center shadow-xs">
+          <span className="block text-[10px] text-blue-700 font-bold uppercase tracking-wider">Hari Ini</span>
           <span className="text-xl font-extrabold text-slate-900 font-mono tracking-tight">{reportsToday}</span>
         </div>
-        <div className="bg-gradient-to-br from-slate-50 to-slate-100/65 border border-slate-200/50 p-3.5 rounded-2xl text-center">
-          <span className="block text-[10px] text-slate-500 font-bold uppercase tracking-wider">Cloud Sinkron</span>
+        <div className="bg-gradient-to-br from-indigo-50 to-cyan-50/80 border border-indigo-100/80 p-3.5 rounded-2xl text-center shadow-xs">
+          <span className="block text-[10px] text-indigo-700 font-bold uppercase tracking-wider">Cloud Sinkron</span>
           <span className="text-xl font-extrabold text-slate-900 font-mono tracking-tight">{reportsWithDrive}</span>
         </div>
       </div>
@@ -158,8 +158,8 @@ export default function ReportHistory({ reports, onDeleteReport, onClearAll }: R
       {/* Reports List */}
       <div className="space-y-4" id="report-items-list">
         {filteredReports.length === 0 ? (
-          <div className="bg-white rounded-2xl border border-slate-100 p-12 text-center" id="empty-state">
-            <FileText size={40} className="text-slate-300 mx-auto mb-3" />
+          <div className="bg-white/95 backdrop-blur-sm rounded-2xl border border-sky-100 p-12 text-center shadow-sm" id="empty-state">
+            <FileText size={40} className="text-sky-300 mx-auto mb-3" />
             <h4 className="text-sm font-semibold text-slate-700">Tidak ada data laporan ditemukan</h4>
             <p className="text-xs text-slate-400 mt-1 max-w-xs mx-auto">
               {searchTerm 
@@ -171,7 +171,7 @@ export default function ReportHistory({ reports, onDeleteReport, onClearAll }: R
           filteredReports.map((report) => (
             <div 
               key={report.id} 
-              className="bg-white border border-slate-100 rounded-[24px] p-5 hover:border-indigo-100/80 shadow-3xs transition-all duration-300 space-y-3.5 relative overflow-hidden"
+              className="bg-white/95 backdrop-blur-sm border border-sky-100/80 rounded-[24px] p-5 hover:border-sky-300 shadow-sm shadow-sky-100/50 transition-all duration-300 space-y-3.5 relative overflow-hidden"
               id={`report-item-${report.id}`}
             >
               {/* Top Row: Date, Time & Status */}

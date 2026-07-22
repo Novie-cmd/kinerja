@@ -339,26 +339,26 @@ export default function FormInput({ settings, onAddReport }: FormInputProps) {
     <div className="space-y-6" id="form-input-container">
       {/* Employee Quick Info Badge styled elegant & natural */}
       {(settings.employeeName || settings.position) && (
-        <div className="bg-slate-50 border border-slate-200/60 rounded-2xl p-4 flex items-center justify-between shadow-2xs animate-fade-in" id="employee-badge-info">
+        <div className="bg-white/90 backdrop-blur-md border border-sky-100 rounded-2xl p-4 flex items-center justify-between shadow-sm shadow-sky-100/50 animate-fade-in" id="employee-badge-info">
           <div>
-            <span className="text-[10px] font-bold text-indigo-600 uppercase tracking-widest block mb-0.5">Identitas Pelapor</span>
+            <span className="text-[10px] font-bold text-sky-600 uppercase tracking-widest block mb-0.5">Identitas Pelapor</span>
             <h4 className="font-extrabold text-slate-900 text-sm tracking-tight">{settings.employeeName || 'Pegawai Laporan'}</h4>
             <p className="text-xs text-slate-500 font-medium">{settings.position || 'Jabatan Umum'} {settings.employeeId && `• NIP. ${settings.employeeId}`}</p>
           </div>
-          <div className="w-10 h-10 rounded-xl bg-indigo-50 border border-indigo-150 text-indigo-600 font-bold flex items-center justify-center text-sm shadow-2xs">
+          <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-blue-600 to-sky-500 text-white font-extrabold flex items-center justify-center text-sm shadow-md shadow-sky-200">
             {(settings.employeeName || 'P')[0].toUpperCase()}
           </div>
         </div>
       )}
 
       {/* Main Elegant Input Form following the Natural Tones structure */}
-      <div className="bg-white rounded-[32px] border border-slate-100 shadow-xl shadow-slate-200/40 p-6 md:p-8" id="card-input-form">
-        <div className="flex items-center justify-between mb-6 pb-4 border-b border-slate-50">
+      <div className="bg-white/95 backdrop-blur-sm rounded-[32px] border border-sky-100 shadow-xl shadow-sky-100/60 p-6 md:p-8" id="card-input-form">
+        <div className="flex items-center justify-between mb-6 pb-4 border-b border-sky-50">
           <h2 className="text-lg font-bold text-slate-900 flex items-center gap-2">
-            <Sparkles size={18} className="text-indigo-600 animate-pulse" />
+            <Sparkles size={18} className="text-sky-500 animate-pulse" />
             <span>Formulir Input Laporan</span>
           </h2>
-          <span className="px-2.5 py-1 bg-indigo-50 text-indigo-700 text-[10px] font-bold uppercase rounded-full tracking-wider border border-indigo-100">
+          <span className="px-2.5 py-1 bg-sky-50 text-sky-700 text-[10px] font-bold uppercase rounded-full tracking-wider border border-sky-100">
             Mandiri
           </span>
         </div>
@@ -374,8 +374,8 @@ export default function FormInput({ settings, onAddReport }: FormInputProps) {
           {/* Tanggal & Waktu Split */}
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1.5">
-              <label className="text-xs font-bold text-slate-500 uppercase ml-1 flex items-center gap-1.5" htmlFor="field-tanggal">
-                <Calendar size={12} className="text-indigo-600" /> Tanggal
+              <label className="text-xs font-bold text-slate-600 uppercase ml-1 flex items-center gap-1.5" htmlFor="field-tanggal">
+                <Calendar size={12} className="text-sky-600" /> Tanggal
               </label>
               <input
                 id="field-tanggal"
@@ -383,13 +383,13 @@ export default function FormInput({ settings, onAddReport }: FormInputProps) {
                 required
                 value={tanggal}
                 onChange={(e) => setTanggal(e.target.value)}
-                className="w-full px-4 py-3 rounded-2xl bg-slate-50 border border-transparent focus:bg-white focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition-all outline-none text-sm text-slate-800 font-medium"
+                className="w-full px-4 py-3 rounded-2xl bg-sky-50/50 border border-sky-100/80 focus:bg-white focus:border-sky-500 focus:ring-4 focus:ring-sky-500/15 transition-all outline-none text-sm text-slate-800 font-medium"
               />
             </div>
 
             <div className="space-y-1.5">
-              <label className="text-xs font-bold text-slate-500 uppercase ml-1 flex items-center gap-1.5" htmlFor="field-waktu">
-                <Clock size={12} className="text-indigo-600" /> Waktu Kegiatan
+              <label className="text-xs font-bold text-slate-600 uppercase ml-1 flex items-center gap-1.5" htmlFor="field-waktu">
+                <Clock size={12} className="text-sky-600" /> Waktu Kegiatan
               </label>
               <input
                 id="field-waktu"
@@ -397,16 +397,16 @@ export default function FormInput({ settings, onAddReport }: FormInputProps) {
                 required
                 value={waktu}
                 onChange={(e) => setWaktu(e.target.value)}
-                className="w-full px-4 py-3 rounded-2xl bg-slate-50 border border-transparent focus:bg-white focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition-all outline-none text-sm text-slate-800 font-medium"
+                className="w-full px-4 py-3 rounded-2xl bg-sky-50/50 border border-sky-100/80 focus:bg-white focus:border-sky-500 focus:ring-4 focus:ring-sky-500/15 transition-all outline-none text-sm text-slate-800 font-medium"
               />
             </div>
           </div>
 
           {/* Uraian Kinerja */}
           <div className="space-y-1.5">
-            <label className="text-xs font-bold text-slate-500 uppercase ml-1 flex items-center justify-between" htmlFor="field-uraian">
+            <label className="text-xs font-bold text-slate-600 uppercase ml-1 flex items-center justify-between" htmlFor="field-uraian">
               <span className="flex items-center gap-1.5">
-                <AlignLeft size={12} className="text-indigo-600" /> Uraian Pekerjaan / Kegiatan
+                <AlignLeft size={12} className="text-sky-600" /> Uraian Pekerjaan / Kegiatan
               </span>
               <span className="text-[10px] text-slate-400 font-semibold uppercase">Min. 5 Huruf</span>
             </label>
@@ -417,7 +417,7 @@ export default function FormInput({ settings, onAddReport }: FormInputProps) {
               placeholder="Jelaskan detail kegiatan anda hari ini..."
               value={uraian}
               onChange={(e) => setUraian(e.target.value)}
-              className="w-full px-4 py-3 rounded-2xl bg-slate-50 border border-transparent focus:bg-white focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition-all outline-none text-sm text-slate-800 leading-relaxed resize-none"
+              className="w-full px-4 py-3 rounded-2xl bg-sky-50/50 border border-sky-100/80 focus:bg-white focus:border-sky-500 focus:ring-4 focus:ring-sky-500/15 transition-all outline-none text-sm text-slate-800 leading-relaxed resize-none"
             />
           </div>
 
@@ -526,8 +526,8 @@ export default function FormInput({ settings, onAddReport }: FormInputProps) {
 
           {/* Link Pendukung */}
           <div className="space-y-1.5">
-            <label className="text-xs font-bold text-slate-500 uppercase ml-1 flex items-center gap-1.5" htmlFor="field-link">
-              <LinkIcon size={12} className="text-indigo-600" /> Link Dokumen Pendukung
+            <label className="text-xs font-bold text-slate-600 uppercase ml-1 flex items-center gap-1.5" htmlFor="field-link">
+              <LinkIcon size={12} className="text-sky-600" /> Link Dokumen Pendukung
             </label>
             <div className="relative">
               <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-slate-400">
@@ -541,20 +541,20 @@ export default function FormInput({ settings, onAddReport }: FormInputProps) {
                 placeholder="https://docs.google.com/..."
                 value={link}
                 onChange={(e) => setLink(e.target.value)}
-                className="w-full pl-10 pr-4 py-3 rounded-2xl bg-slate-50 border border-transparent focus:bg-white focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition-all outline-none text-sm text-slate-800 font-medium"
+                className="w-full pl-10 pr-4 py-3 rounded-2xl bg-sky-50/50 border border-sky-100/80 focus:bg-white focus:border-sky-500 focus:ring-4 focus:ring-sky-500/15 transition-all outline-none text-sm text-slate-800 font-medium"
               />
             </div>
             <p className="text-[10px] text-slate-400 mt-1 italic ml-1">Contoh: Link Google Drive, Trello, atau Jira.</p>
           </div>
 
-          {/* Submit Button in Natural Tones / indigo style */}
+          {/* Submit Button in bright blue gradient style */}
           <button
             type="submit"
             disabled={submitting}
             className={`w-full py-4 px-4 rounded-2xl flex items-center justify-center gap-2.5 font-bold text-sm shadow-lg transition-all cursor-pointer transform active:scale-95 focus:outline-none ${
               submitting 
-                ? 'bg-slate-350 text-slate-500 cursor-not-allowed shadow-none' 
-                : 'bg-indigo-600 hover:bg-indigo-700 text-white shadow-indigo-200'
+                ? 'bg-slate-300 text-slate-500 cursor-not-allowed shadow-none' 
+                : 'bg-gradient-to-r from-blue-600 via-sky-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white shadow-sky-200'
             }`}
           >
             {submitting ? (
